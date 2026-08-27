@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+\<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fyde VLC Replica</title>
+    <title>Fyde VLC Player</title>
     <link rel="manifest" href="./manifest.json">
     <style>
         /* ==========================================
@@ -25,22 +25,24 @@
            2. AREA VIDEO UTAMA
            ========================================== */
         .video-container {
-            flex: 1; /* Ambil semua ruang yang tersisa */
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            flex: 1;
             position: relative;
             background: #000;
+            width: 100%;
+            overflow: hidden;
         }
 
         video {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* Memastikan rasio video tetap proporsional */
             display: block;
         }
 
-        /* Ikon Kerucut VLC di Tengah (Keren) */
+        /* Ikon Kerucut VLC di Tengah */
         .vlc-cone-icon {
             position: absolute;
             top: 50%;
@@ -50,10 +52,10 @@
             height: auto;
             opacity: 1;
             transition: opacity 0.3s ease;
-            pointer-events: none; /* Klik tembus ke video */
+            pointer-events: none;
+            z-index: 5;
         }
         
-        /* Ikon kerucut hilang saat video diputar */
         .playing .vlc-cone-icon {
             opacity: 0;
         }
@@ -62,25 +64,25 @@
            3. PANEL KONTROL BAWAH (Replika VLC)
            ========================================== */
         .vlc-controls-bar {
-            height: 40px; /* Panel kontrol VLC klasik tipis */
-            background: #f0f0f0; /* Abu-abu terang VLC */
+            height: 40px;
+            background: #f0f0f0;
             display: flex;
             align-items: center;
             padding: 0 10px;
-            color: #444; /* Teks abu-abu tua VLC */
+            color: #444;
             font-size: 13px;
             box-shadow: 0 -2px 5px rgba(0,0,0,0.2);
             position: relative;
             z-index: 10;
         }
 
-        /* Area Waktu dan Slider Durasi */
         .vlc-time-slider-area {
             display: flex;
             align-items: center;
             gap: 8px;
             margin-right: 15px;
-            font-family: monospace; /* Font waktu VLC */
+            font-family: monospace;
+            flex: 1;
         }
 
         .vlc-current-time, .vlc-total-time {
@@ -88,10 +90,9 @@
             text-align: center;
         }
 
-        /* Kustom Slider Durasi Tipis VLC */
         #durationControl {
             flex: 1;
-            height: 4px; /* Sangat tipis */
+            height: 4px;
             background: #ccc;
             border-radius: 2px;
             outline: none;
@@ -101,7 +102,7 @@
 
         #durationControl::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 8px; /* Jempol kecil */
+            width: 8px;
             height: 12px;
             background: #aaa;
             border: 1px solid #777;
@@ -109,7 +110,6 @@
             cursor: pointer;
         }
 
-        /* Area Tombol Kontrol (Grup Kiri & Kanan) */
         .vlc-button-group {
             display: flex;
             align-items: center;
@@ -117,13 +117,12 @@
         }
 
         .vlc-controls-right {
-            margin-left: auto; /* Dorong ke kanan */
+            margin-left: 15px;
             display: flex;
             align-items: center;
             gap: 4px;
         }
 
-        /* Styling Tombol Kontrol VLC (Ikon Monokrom) */
         .vlc-btn {
             background: transparent;
             border: none;
@@ -140,14 +139,12 @@
             background-color: #e0e0e0;
         }
         
-        /* Ikon SVG Kustom yang Meniru VLC */
         .vlc-icon {
-            width: 14px; /* Ikon VLC kecil-kecil */
+            width: 14px;
             height: 14px;
-            fill: currentColor; /* Gunakan warna teks tombol */
+            fill: currentColor;
         }
 
-        /* Kustom Kontrol Volume VLC (Oranye-Putih Keren) */
         .vlc-volume-area {
             display: flex;
             align-items: center;
@@ -156,9 +153,9 @@
         }
         
         #volumeControl {
-            width: 60px; /* Slider volume pendek VLC */
+            width: 60px;
             height: 8px;
-            background: linear-gradient(to right, #ffcc99 0%, #ff6600 100%); /* Warna oranye VLC */
+            background: linear-gradient(to right, #ffcc99 0%, #ff6600 100%);
             border-radius: 4px;
             outline: none;
             cursor: pointer;
@@ -176,7 +173,7 @@
         }
 
         /* ==========================================
-           4. TOMBOL PEMILIH FILE ATAS (Sembunyikan)
+           4. TOMBOL PEMILIH FILE ATAS
            ========================================== */
         .file-select-btn {
             position: fixed;
@@ -199,7 +196,6 @@
         
         input[type="file"] { display: none; }
         
-        /* Area Subtitle Kustom */
         ::cue { background-color: rgba(0, 0, 0, 0.8); color: yellow; font-size: 1.3em; text-shadow: 1px 1px 2px black; }
     </style>
 </head>
@@ -213,7 +209,7 @@
     <!-- Area Video Utama -->
     <div class="video-container" id="videoContainer">
         <video id="videoPlayer" crossorigin="anonymous"></video>
-        <!-- Ikon kerucut VLC besar yang keren saat video tidak diputar -->
+        <!-- Ikon kerucut VLC besar -->
         <img src="https://upload.wikimedia.org/wikipedia/commons/e/e6/VLC_Icon.svg" class="vlc-cone-icon" alt="VLC Cone">
     </div>
 
@@ -254,7 +250,7 @@
         </div>
     </div>
 
-<script>
+    <script>
         const fileInput = document.getElementById('fileInput');
         const videoPlayer = document.getElementById('videoPlayer');
         const videoContainer = document.getElementById('videoContainer');
@@ -281,10 +277,9 @@
             totalTimeDisplay.innerText = formatTime(videoPlayer.duration);
             durationControl.max = videoPlayer.duration;
 
-            // FITUR RESUME: Cek apakah ada riwayat waktu tonton untuk file ini
+            // FITUR RESUME: Cek apakah ada riwayat waktu tonton
             if (currentVideoName) {
                 const savedTime = localStorage.getItem('vlc_resume_' + currentVideoName);
-                // Jika ada waktu tersimpan, dan video belum selesai sepenuhnya, lompat ke waktu tersebut
                 if (savedTime && parseFloat(savedTime) > 0 && parseFloat(savedTime) < videoPlayer.duration - 2) {
                     videoPlayer.currentTime = parseFloat(savedTime);
                 }
@@ -297,13 +292,13 @@
                 durationControl.value = videoPlayer.currentTime;
             }
 
-            // SIMPAN PROGRES: Simpan waktu tonton ke LocalStorage setiap kali video berjalan
+            // SIMPAN PROGRES
             if (currentVideoName && videoPlayer.currentTime > 0) {
                 localStorage.setItem('vlc_resume_' + currentVideoName, videoPlayer.currentTime);
             }
         });
 
-        // Hapus riwayat jika video sudah selesai ditonton sampai akhir
+        // Hapus riwayat jika video tamat
         videoPlayer.addEventListener('ended', () => {
             if (currentVideoName) {
                 localStorage.removeItem('vlc_resume_' + currentVideoName);
@@ -349,7 +344,7 @@
 
             if (!videoFile) return;
 
-            // Simpan nama file ke variabel global untuk dijadikan kunci LocalStorage
+            // Simpan nama file ke variabel global
             currentVideoName = videoFile.name;
 
             videoPlayer.innerHTML = '';
@@ -404,7 +399,7 @@
             videoPlayer.pause();
             videoPlayer.currentTime = 0;
             if (currentVideoName) {
-                localStorage.removeItem('vlc_resume_' + currentVideoName); // Reset progres jika distop manual
+                localStorage.removeItem('vlc_resume_' + currentVideoName);
             }
         });
 
@@ -419,7 +414,7 @@
 
         document.getElementById('btnFullscreen').addEventListener('click', () => {
             if (!document.fullscreenElement) {
-                videoContainer.requestFullscreen().catch(err => console.log(err));
+                document.body.requestFullscreen().catch(err => console.log(err));
             } else {
                 document.exitFullscreen();
             }
@@ -457,7 +452,7 @@
                     }
                     break;
                 case 'f':
-                    if (!document.fullscreenElement) videoContainer.requestFullscreen();
+                    if (!document.fullscreenElement) document.body.requestFullscreen();
                     else document.exitFullscreen();
                     break;
             }
