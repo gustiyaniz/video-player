@@ -1,0 +1,16 @@
+{
+  "name": "Fyde Offline Player",
+  "short_name": "Vid Player",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#121212",
+  "theme_color": "#121212",
+  "icons": [
+    {
+      "src": "https://github.com/gustiyaniz/video-player/blob/ab7f0b31454077151e501b2acadf09a0e073aa20/icon/icon%20videoplayer.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
