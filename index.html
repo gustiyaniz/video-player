@@ -253,7 +253,7 @@
         </div>
     </div>
 
-    <script>
+<script>
         const fileInput = document.getElementById('fileInput');
         const videoPlayer = document.getElementById('videoPlayer');
         const videoContainer = document.getElementById('videoContainer');
@@ -264,8 +264,11 @@
         const pauseIcon = document.getElementById('pauseIcon');
         const volumeControl = document.getElementById('volumeControl');
 
+        // Variabel global untuk menyimpan nama file yang sedang diputar
+        let currentVideoName = ""; 
+
         // ==========================================
-        // 1. LOGIKA FORMAT WAKTU & UPDATES
+        // 1. LOGIKA FORMAT WAKTU & RESUME VIDEO
         // ==========================================
         function formatTime(seconds) {
             let min = Math.floor(seconds / 60);
@@ -276,6 +279,15 @@
         videoPlayer.addEventListener('loadedmetadata', () => {
             totalTimeDisplay.innerText = formatTime(videoPlayer.duration);
             durationControl.max = videoPlayer.duration;
+
+            // FITUR RESUME: Cek apakah ada riwayat waktu tonton untuk file ini
+            if (currentVideoName) {
+                const savedTime = localStorage.getItem('vlc_resume_' + currentVideoName);
+                // Jika ada waktu tersimpan, dan video belum selesai sepenuhnya, lompat ke waktu tersebut
+                if (savedTime && parseFloat(savedTime) > 0 && parseFloat(savedTime) < videoPlayer.duration - 2) {
+                    videoPlayer.currentTime = parseFloat(savedTime);
+                }
+            }
         });
 
         videoPlayer.addEventListener('timeupdate', () => {
@@ -283,6 +295,21 @@
             if (!durationControl.dataset.isDragging) {
                 durationControl.value = videoPlayer.currentTime;
             }
+
+            // SIMPAN PROGRES: Simpan waktu tonton ke LocalStorage setiap kali video berjalan
+            if (currentVideoName && videoPlayer.currentTime > 0) {
+                localStorage.setItem('vlc_resume_' + currentVideoName, videoPlayer.currentTime);
+            }
+        });
+
+        // Hapus riwayat jika video sudah selesai ditonton sampai akhir
+        videoPlayer.addEventListener('ended', () => {
+            if (currentVideoName) {
+                localStorage.removeItem('vlc_resume_' + currentVideoName);
+            }
+            playIcon.style.display = 'block';
+            pauseIcon.style.display = 'none';
+            videoContainer.classList.remove('playing');
         });
 
         // Kontrol Durasi Slider
@@ -321,6 +348,9 @@
 
             if (!videoFile) return;
 
+            // Simpan nama file ke variabel global untuk dijadikan kunci LocalStorage
+            currentVideoName = videoFile.name;
+
             videoPlayer.innerHTML = '';
             videoPlayer.src = URL.createObjectURL(videoFile);
             videoPlayer.play();
@@ -351,21 +381,20 @@
             else videoPlayer.pause();
         }
 
-        // Sinkronisasi ikon play/pause dan kerucut di tengah
         videoPlayer.addEventListener('play', () => {
             playIcon.style.display = 'none';
             pauseIcon.style.display = 'block';
-            videoContainer.classList.add('playing'); // Sembunyikan kerucut
+            videoContainer.classList.add('playing');
         });
         
         videoPlayer.addEventListener('pause', () => {
             playIcon.style.display = 'block';
             pauseIcon.style.display = 'none';
-            videoContainer.classList.remove('playing'); // Tampilkan kerucut
+            videoContainer.classList.remove('playing');
         });
 
         document.getElementById('btnPlayPause').addEventListener('click', togglePlay);
-        videoPlayer.addEventListener('click', togglePlay); // Klik pada video untuk play/pause
+        videoPlayer.addEventListener('click', togglePlay);
 
         document.getElementById('btnRewind').addEventListener('click', () => videoPlayer.currentTime -= 10);
         document.getElementById('btnFastForward').addEventListener('click', () => videoPlayer.currentTime += 10);
@@ -373,6 +402,9 @@
         document.getElementById('btnStop').addEventListener('click', () => {
             videoPlayer.pause();
             videoPlayer.currentTime = 0;
+            if (currentVideoName) {
+                localStorage.removeItem('vlc_resume_' + currentVideoName); // Reset progres jika distop manual
+            }
         });
 
         volumeControl.addEventListener('input', (e) => {
@@ -399,38 +431,38 @@
             if (e.target.tagName === 'INPUT' && e.target.type !== 'range') return;
 
             switch(e.key.toLowerCase()) {
-                case ' ': // Spasi
+                case ' ':
                     e.preventDefault();
                     togglePlay();
                     break;
-                case 'arrowright': // Panah Kanan
+                case 'arrowright':
                     videoPlayer.currentTime += 10;
                     break;
-                case 'arrowleft': // Panah Kiri
+                case 'arrowleft':
                     videoPlayer.currentTime -= 10;
                     break;
-                case 'arrowup': // Panah Atas
+                case 'arrowup':
                     e.preventDefault();
                     if (videoPlayer.volume < 1) {
                         videoPlayer.volume = Math.min(1, videoPlayer.volume + 0.1);
                         volumeControl.value = videoPlayer.volume;
                     }
                     break;
-                case 'arrowdown': // Panah Bawah
+                case 'arrowdown':
                     e.preventDefault();
                     if (videoPlayer.volume > 0) {
                         videoPlayer.volume = Math.max(0, videoPlayer.volume - 0.1);
                         volumeControl.value = videoPlayer.volume;
                     }
                     break;
-                case 'f': // Tombol F
+                case 'f':
                     if (!document.fullscreenElement) videoContainer.requestFullscreen();
                     else document.exitFullscreen();
                     break;
             }
         });
 
-        // Daftarkan Service Worker untuk Offline
+        // Daftarkan Service Worker
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('./sw.js')
             .catch(err => console.log("Service Worker Gagal", err));
