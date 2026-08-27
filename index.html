@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fyde Offline Player</title>
+    <link rel="manifest" href="./manifest.json">
+    <style>
+        body { background: #121212; color: white; font-family: sans-serif; text-align: center; margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: auto; }
+        
+        /* Area Video */
+        .video-wrapper { position: relative; width: 100%; background: #000; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.8); }
+        video { width: 100%; display: block; }
+        
+        /* Styling Tombol Input File */
+        .controls-top { margin-bottom: 20px; }
+        .file-btn { background: #0078D7; color: white; padding: 10px 20px; border-radius: 5px; cursor: pointer; display: inline-block; font-weight: bold; }
+        .file-btn:hover { background: #005A9E; }
+        input[type="file"] { display: none; }
+        .status { margin-top: 10px; font-size: 0.9em; color: #aaa; }
+        
+        /* Panel Kontrol VLC-style */
+        .vlc-controls { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px; padding: 15px; background: #1e1e1e; border-radius: 8px; margin-top: 15px; }
+        .vlc-controls button, .vlc-controls select { background: #333; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        .vlc-controls button:hover, .vlc-controls select:hover { background: #555; }
+        .vlc-controls input[type="range"] { cursor: pointer; }
+
+        /* Styling Subtitle */
+        ::cue { background-color: rgba(0, 0, 0, 0.8); color: yellow; font-size: 1.2em; text-shadow: 1px 1px 2px black; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="controls-top">
+            <label class="file-btn">
+                📂 Pilih Video & Subtitle
+                <input type="file" id="fileInput" multiple accept="video/*,.srt,.vtt">
+            </label>
+            <div id="statusText" class="status">Pilih file MP4 dan SRT bersamaan.</div>
+        </div>
+
+        <!-- Video Player -->
+        <div class="video-wrapper" id="videoContainer">
+            <!-- controls bawaan dihilangkan agar kita bisa pakai custom + shortcut -->
+            <video id="videoPlayer" crossorigin="anonymous"></video>
+        </div>
+
+        <!-- Panel Kontrol Kustom -->
+        <div class="vlc-controls">
+            <button id="btnPlayPause">⏯️ Play/Pause</button>
+            <button id="btnSkipBack">⏪ -10s</button>
+            <button id="btnSkipFwd">⏩ +10s</button>
+            
+            <select id="speedControl">
+                <option value="0.25">Speed: 0.25x</option>
+                <option value="0.5">Speed: 0.5x</option>
+                <option value="1" selected>Speed: Normal (1x)</option>
+                <option value="1.5">Speed: 1.5x</option>
+                <option value="2">Speed: 2x</option>
+            </select>
+
+            <button id="btnMute">🔊 Mute</button>
+            <input type="range" id="volumeControl" min="0" max="1" step="0.1" value="1" title="Volume">
+            
+            <button id="btnFullscreen">🔲 Fullscreen</button>
+        </div>
+        
+        <p style="font-size: 0.8em; color: #777; margin-top: 15px;">
+            <b>Pintasan Keyboard:</b> [Spasi] Play/Pause | [←/→] Skip 10s | [↑/↓] Volume | [F] Fullscreen
+        </p>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const videoPlayer = document.getElementById('videoPlayer');
+        const videoContainer = document.getElementById('videoContainer');
+        const statusText = document.getElementById('statusText');
+
+        // Elemen Kontrol
+        const btnPlayPause = document.getElementById('btnPlayPause');
+        const btnSkipBack = document.getElementById('btnSkipBack');
+        const btnSkipFwd = document.getElementById('btnSkipFwd');
+        const speedControl = document.getElementById('speedControl');
+        const btnMute = document.getElementById('btnMute');
+        const volumeControl = document.getElementById('volumeControl');
+        const btnFullscreen = document.getElementById('btnFullscreen');
+
+        // ==========================================
+        // 1. LOGIKA MEMBACA FILE & SUBTITLE
+        // ==========================================
+        function srtToVtt(srtText) {
+            let vttText = 'WEBVTT\n\n';
+            vttText += srtText.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2');
+            return vttText;
+        }
+
+        fileInput.addEventListener('change', async (e) => {
+            const files = Array.from(e.target.files);
+            if (files.length === 0) return;
+
+            let videoFile = null;
+            let subFiles = [];
+
+            files.forEach(file => {
+                if (file.type.startsWith('video/')) {
+                    videoFile = file;
+                } else if (file.name.endsWith('.srt') || file.name.endsWith('.vtt')) {
+                    subFiles.push(file);
+                }
+            });
+
+            if (!videoFile) {
+                statusText.innerText = "Video tidak ditemukan!";
+                return;
+            }
+
+            videoPlayer.innerHTML = '';
+            videoPlayer.src = URL.createObjectURL(videoFile);
+            statusText.innerText = `Memutar: ${videoFile.name}`;
+            videoPlayer.play();
+
+            const videoBaseName = videoFile.name.substring(0, videoFile.name.lastIndexOf('.'));
+            const matchedSub = subFiles.find(sub => sub.name.substring(0, sub.name.lastIndexOf('.')) === videoBaseName);
+
+            if (matchedSub) {
+                statusText.innerText += ` | Subtitle: ${matchedSub.name}`;
+                const text = await matchedSub.text();
+                let vttData = matchedSub.name.endsWith('.srt') ? srtToVtt(text) : text;
+                const blob = new Blob([vttData], { type: 'text/vtt' });
+                
+                const trackEl = document.createElement('track');
+                trackEl.kind = 'subtitles';
+                trackEl.label = 'Indonesia';
+                trackEl.srclang = 'id';
+                trackEl.src = URL.createObjectURL(blob);
+                trackEl.default = true;
+                videoPlayer.appendChild(trackEl);
+            }
+        });
+
+        // ==========================================
+        // 2. LOGIKA KONTROL VIDEO (TOMBOL)
+        // ==========================================
+        function togglePlay() {
+            if (videoPlayer.paused) videoPlayer.play();
+            else videoPlayer.pause();
+        }
+
+        btnPlayPause.addEventListener('click', togglePlay);
+        
+        // Klik pada video juga bisa untuk play/pause
+        videoPlayer.addEventListener('click', togglePlay);
+
+        btnSkipBack.addEventListener('click', () => videoPlayer.currentTime -= 10);
+        btnSkipFwd.addEventListener('click', () => videoPlayer.currentTime += 10);
+
+        speedControl.addEventListener('change', (e) => {
+            videoPlayer.playbackRate = parseFloat(e.target.value);
+        });
+
+        btnMute.addEventListener('click', () => {
+            videoPlayer.muted = !videoPlayer.muted;
+            btnMute.innerText = videoPlayer.muted ? '🔇 Unmute' : '🔊 Mute';
+        });
+
+        volumeControl.addEventListener('input', (e) => {
+            videoPlayer.volume = e.target.value;
+            videoPlayer.muted = false;
+            btnMute.innerText = '🔊 Mute';
+        });
+
+        btnFullscreen.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                videoContainer.requestFullscreen().catch(err => console.log(err));
+            } else {
+                document.exitFullscreen();
+            }
+        });
+
+        // ==========================================
+        // 3. PINTASAN KEYBOARD (SHORTCUTS)
+        // ==========================================
+        document.addEventListener('keydown', (e) => {
+            // Abaikan jika user sedang mengetik sesuatu di form (jika ada)
+            if (e.target.tagName === 'INPUT' && e.target.type !== 'range') return;
+
+            switch(e.key.toLowerCase()) {
+                case ' ': // Spasi
+                    e.preventDefault(); // Mencegah halaman scroll ke bawah
+                    togglePlay();
+                    break;
+                case 'arrowright': // Panah Kanan
+                    videoPlayer.currentTime += 10;
+                    break;
+                case 'arrowleft': // Panah Kiri
+                    videoPlayer.currentTime -= 10;
+                    break;
+                case 'arrowup': // Panah Atas
+                    e.preventDefault();
+                    if (videoPlayer.volume < 1) {
+                        videoPlayer.volume = Math.min(1, videoPlayer.volume + 0.1);
+                        volumeControl.value = videoPlayer.volume;
+                    }
+                    break;
+                case 'arrowdown': // Panah Bawah
+                    e.preventDefault();
+                    if (videoPlayer.volume > 0) {
+                        videoPlayer.volume = Math.max(0, videoPlayer.volume - 0.1);
+                        volumeControl.value = videoPlayer.volume;
+                    }
+                    break;
+                case 'f': // Tombol F
+                    if (!document.fullscreenElement) videoContainer.requestFullscreen();
+                    else document.exitFullscreen();
+                    break;
+            }
+        });
+
+        // Daftarkan Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js')
+            .catch(err => console.log("Service Worker Gagal", err));
+        }
+    </script>
+</body>
+</html>
