@@ -3,91 +3,300 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fyde Offline Player</title>
+    <title>Fyde VLC Replica</title>
     <link rel="manifest" href="./manifest.json">
     <style>
-        body { background: #121212; color: white; font-family: sans-serif; text-align: center; margin: 0; padding: 20px; }
-        .container { max-width: 900px; margin: auto; }
-        
-        /* Area Video */
-        .video-wrapper { position: relative; width: 100%; background: #000; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.8); }
-        video { width: 100%; display: block; }
-        
-        /* Styling Tombol Input File */
-        .controls-top { margin-bottom: 20px; }
-        .file-btn { background: #0078D7; color: white; padding: 10px 20px; border-radius: 5px; cursor: pointer; display: inline-block; font-weight: bold; }
-        .file-btn:hover { background: #005A9E; }
-        input[type="file"] { display: none; }
-        .status { margin-top: 10px; font-size: 0.9em; color: #aaa; }
-        
-        /* Panel Kontrol VLC-style */
-        .vlc-controls { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px; padding: 15px; background: #1e1e1e; border-radius: 8px; margin-top: 15px; }
-        .vlc-controls button, .vlc-controls select { background: #333; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 14px; }
-        .vlc-controls button:hover, .vlc-controls select:hover { background: #555; }
-        .vlc-controls input[type="range"] { cursor: pointer; }
+        /* ==========================================
+           1. RESET & DASAR UI
+           ========================================== */
+        body, html {
+            background: #000;
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+        }
 
-        /* Styling Subtitle */
-        ::cue { background-color: rgba(0, 0, 0, 0.8); color: yellow; font-size: 1.2em; text-shadow: 1px 1px 2px black; }
+        /* ==========================================
+           2. AREA VIDEO UTAMA
+           ========================================== */
+        .video-container {
+            flex: 1; /* Ambil semua ruang yang tersisa */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            background: #000;
+        }
+
+        video {
+            max-width: 100%;
+            max-height: 100%;
+            display: block;
+        }
+
+        /* Ikon Kerucut VLC di Tengah (Keren) */
+        .vlc-cone-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 150px;
+            height: auto;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+            pointer-events: none; /* Klik tembus ke video */
+        }
+        
+        /* Ikon kerucut hilang saat video diputar */
+        .playing .vlc-cone-icon {
+            opacity: 0;
+        }
+
+        /* ==========================================
+           3. PANEL KONTROL BAWAH (Replika VLC)
+           ========================================== */
+        .vlc-controls-bar {
+            height: 40px; /* Panel kontrol VLC klasik tipis */
+            background: #f0f0f0; /* Abu-abu terang VLC */
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            color: #444; /* Teks abu-abu tua VLC */
+            font-size: 13px;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.2);
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Area Waktu dan Slider Durasi */
+        .vlc-time-slider-area {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-right: 15px;
+            font-family: monospace; /* Font waktu VLC */
+        }
+
+        .vlc-current-time, .vlc-total-time {
+            width: 45px;
+            text-align: center;
+        }
+
+        /* Kustom Slider Durasi Tipis VLC */
+        #durationControl {
+            flex: 1;
+            height: 4px; /* Sangat tipis */
+            background: #ccc;
+            border-radius: 2px;
+            outline: none;
+            cursor: pointer;
+            -webkit-appearance: none;
+        }
+
+        #durationControl::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 8px; /* Jempol kecil */
+            height: 12px;
+            background: #aaa;
+            border: 1px solid #777;
+            border-radius: 2px;
+            cursor: pointer;
+        }
+
+        /* Area Tombol Kontrol (Grup Kiri & Kanan) */
+        .vlc-button-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .vlc-controls-right {
+            margin-left: auto; /* Dorong ke kanan */
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* Styling Tombol Kontrol VLC (Ikon Monokrom) */
+        .vlc-btn {
+            background: transparent;
+            border: none;
+            padding: 5px;
+            cursor: pointer;
+            color: #444;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 3px;
+        }
+        
+        .vlc-btn:hover {
+            background-color: #e0e0e0;
+        }
+        
+        /* Ikon SVG Kustom yang Meniru VLC */
+        .vlc-icon {
+            width: 14px; /* Ikon VLC kecil-kecil */
+            height: 14px;
+            fill: currentColor; /* Gunakan warna teks tombol */
+        }
+
+        /* Kustom Kontrol Volume VLC (Oranye-Putih Keren) */
+        .vlc-volume-area {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-left: 10px;
+        }
+        
+        #volumeControl {
+            width: 60px; /* Slider volume pendek VLC */
+            height: 8px;
+            background: linear-gradient(to right, #ffcc99 0%, #ff6600 100%); /* Warna oranye VLC */
+            border-radius: 4px;
+            outline: none;
+            cursor: pointer;
+            -webkit-appearance: none;
+        }
+        
+        #volumeControl::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 10px;
+            height: 10px;
+            background: #fff;
+            border: 1px solid #777;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        /* ==========================================
+           4. TOMBOL PEMILIH FILE ATAS (Sembunyikan)
+           ========================================== */
+        .file-select-btn {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            z-index: 100;
+            font-size: 12px;
+            border: 1px solid rgba(255,255,255,0.3);
+            transition: background 0.2s;
+        }
+        
+        .file-select-btn:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+        
+        input[type="file"] { display: none; }
+        
+        /* Area Subtitle Kustom */
+        ::cue { background-color: rgba(0, 0, 0, 0.8); color: yellow; font-size: 1.3em; text-shadow: 1px 1px 2px black; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="controls-top">
-            <label class="file-btn">
-                📂 Pilih Video & Subtitle
-                <input type="file" id="fileInput" multiple accept="video/*,.srt,.vtt">
-            </label>
-            <div id="statusText" class="status">Pilih file MP4 dan SRT bersamaan.</div>
+    <!-- Tombol Pemilih File di Pojok Kanan Atas -->
+    <label class="file-select-btn">
+        📂 Pilih Media
+        <input type="file" id="fileInput" multiple accept="video/*,.srt,.vtt">
+    </label>
+
+    <!-- Area Video Utama -->
+    <div class="video-container" id="videoContainer">
+        <video id="videoPlayer" crossorigin="anonymous"></video>
+        <!-- Ikon kerucut VLC besar yang keren saat video tidak diputar -->
+        <img src="https://upload.wikimedia.org/wikipedia/commons/e/e6/VLC_Icon.svg" class="vlc-cone-icon" alt="VLC Cone">
+    </div>
+
+    <!-- Panel Kontrol Bawah (Replika VLC) -->
+    <div class="vlc-controls-bar">
+        <!-- Area Waktu dan Slider Durasi -->
+        <div class="vlc-time-slider-area">
+            <span class="vlc-current-time" id="currentTimeDisplay">--:--</span>
+            <input type="range" id="durationControl" min="0" max="100" value="0">
+            <span class="vlc-total-time" id="totalTimeDisplay">--:--</span>
         </div>
 
-        <!-- Video Player -->
-        <div class="video-wrapper" id="videoContainer">
-            <!-- controls bawaan dihilangkan agar kita bisa pakai custom + shortcut -->
-            <video id="videoPlayer" crossorigin="anonymous"></video>
-        </div>
-
-        <!-- Panel Kontrol Kustom -->
-        <div class="vlc-controls">
-            <button id="btnPlayPause">⏯️ Play/Pause</button>
-            <button id="btnSkipBack">⏪ -10s</button>
-            <button id="btnSkipFwd">⏩ +10s</button>
-            
-            <select id="speedControl">
-                <option value="0.25">Speed: 0.25x</option>
-                <option value="0.5">Speed: 0.5x</option>
-                <option value="1" selected>Speed: Normal (1x)</option>
-                <option value="1.5">Speed: 1.5x</option>
-                <option value="2">Speed: 2x</option>
-            </select>
-
-            <button id="btnMute">🔊 Mute</button>
-            <input type="range" id="volumeControl" min="0" max="1" step="0.1" value="1" title="Volume">
-            
-            <button id="btnFullscreen">🔲 Fullscreen</button>
+        <!-- Grup Tombol Kiri -->
+        <div class="vlc-button-group">
+            <button class="vlc-btn" id="btnPlayPause" title="Play/Pause">
+                <svg class="vlc-icon" id="playIcon" viewBox="0 0 16 16"><path d="M4 1v14l11-7z"/></svg>
+                <svg class="vlc-icon" id="pauseIcon" style="display:none;" viewBox="0 0 16 16"><path d="M2 1h4v14H2zM10 1h4v14h-4z"/></svg>
+            </button>
+            <button class="vlc-btn" id="btnPrevious" title="Previous"><svg class="vlc-icon" viewBox="0 0 16 16"><path d="M13 1v14L5 8zm-8 0v14H2z"/></svg></button>
+            <button class="vlc-btn" id="btnRewind" title="Rewind 10s"><svg class="vlc-icon" viewBox="0 0 16 16"><path d="M12.5 1v14l-7-7zm-7 0v14H2z"/></svg></button>
+            <button class="vlc-btn" id="btnFastForward" title="Fast Forward 10s"><svg class="vlc-icon" viewBox="0 0 16 16"><path d="M3.5 1v14l7-7zm7 0v14H14z"/></svg></button>
+            <button class="vlc-btn" id="btnNext" title="Next"><svg class="vlc-icon" viewBox="0 0 16 16"><path d="M3 1v14l8-7zm8 0v14h3z"/></svg></button>
+            <button class="vlc-btn" id="btnStop" title="Stop"><svg class="vlc-icon" viewBox="0 0 16 16"><path d="M2 2h12v12H2z"/></svg></button>
         </div>
         
-        <p style="font-size: 0.8em; color: #777; margin-top: 15px;">
-            <b>Pintasan Keyboard:</b> [Spasi] Play/Pause | [←/→] Skip 10s | [↑/↓] Volume | [F] Fullscreen
-        </p>
+        <!-- Grup Tombol Kanan -->
+        <div class="vlc-controls-right">
+            <button class="vlc-btn" title="Playlist"><svg class="vlc-icon" viewBox="0 0 16 16"><path d="M1 4h14v2H1zm0 4h14v2H1zm0 4h14v2H1z"/></svg></button>
+            <button class="vlc-btn" title="Equalizer"><svg class="vlc-icon" viewBox="0 0 16 16"><path d="M1 2v12h2V2zm4 0v12h2V2zm4 0v12h2V2zm4 0v12h2V2z"/></svg></button>
+            <button class="vlc-btn" title="Subtitle"><svg class="vlc-icon" viewBox="0 0 16 16"><path d="M1 4v8h14V4zm2 2h10v4H3z"/></svg></button>
+            <button class="vlc-btn" id="btnFullscreen" title="Fullscreen"><svg class="vlc-icon" viewBox="0 0 16 16"><path d="M1 1h6v2H3v4H1zm8 0h7v6h-2V3h-4zm0 12h4V9h2v7H9zm-6 0h4v2H1V9h2z"/></svg></button>
+            
+            <!-- Area Volume -->
+            <div class="vlc-volume-area">
+                <button class="vlc-btn" id="btnMute" title="Mute/Unmute"><svg class="vlc-icon" viewBox="0 0 16 16"><path d="M8 1L4 5H1v6h3l4 4zm4 7c0-2-1.5-3.5-3-4v8c1.5-.5 3-2 3-4zm2 0c0-3.5-2.5-6.5-5.5-7v2c2 .5 3.5 2.5 3.5 5s-1.5 4.5-3.5 5v2c3-.5 5.5-3.5 5.5-7z"/></svg></button>
+                <input type="range" id="volumeControl" min="0" max="1" step="0.05" value="0.6">
+            </div>
+        </div>
     </div>
 
     <script>
         const fileInput = document.getElementById('fileInput');
         const videoPlayer = document.getElementById('videoPlayer');
         const videoContainer = document.getElementById('videoContainer');
-        const statusText = document.getElementById('statusText');
-
-        // Elemen Kontrol
-        const btnPlayPause = document.getElementById('btnPlayPause');
-        const btnSkipBack = document.getElementById('btnSkipBack');
-        const btnSkipFwd = document.getElementById('btnSkipFwd');
-        const speedControl = document.getElementById('speedControl');
-        const btnMute = document.getElementById('btnMute');
+        const currentTimeDisplay = document.getElementById('currentTimeDisplay');
+        const totalTimeDisplay = document.getElementById('totalTimeDisplay');
+        const durationControl = document.getElementById('durationControl');
+        const playIcon = document.getElementById('playIcon');
+        const pauseIcon = document.getElementById('pauseIcon');
         const volumeControl = document.getElementById('volumeControl');
-        const btnFullscreen = document.getElementById('btnFullscreen');
 
         // ==========================================
-        // 1. LOGIKA MEMBACA FILE & SUBTITLE
+        // 1. LOGIKA FORMAT WAKTU & UPDATES
+        // ==========================================
+        function formatTime(seconds) {
+            let min = Math.floor(seconds / 60);
+            let sec = Math.floor(seconds % 60);
+            return `${min < 10 ? '0' + min : min}:${sec < 10 ? '0' + sec : sec}`;
+        }
+
+        videoPlayer.addEventListener('loadedmetadata', () => {
+            totalTimeDisplay.innerText = formatTime(videoPlayer.duration);
+            durationControl.max = videoPlayer.duration;
+        });
+
+        videoPlayer.addEventListener('timeupdate', () => {
+            currentTimeDisplay.innerText = formatTime(videoPlayer.currentTime);
+            if (!durationControl.dataset.isDragging) {
+                durationControl.value = videoPlayer.currentTime;
+            }
+        });
+
+        // Kontrol Durasi Slider
+        durationControl.addEventListener('mousedown', () => durationControl.dataset.isDragging = 'true');
+        durationControl.addEventListener('mouseup', () => {
+            videoPlayer.currentTime = durationControl.value;
+            delete durationControl.dataset.isDragging;
+        });
+        durationControl.addEventListener('input', () => {
+             currentTimeDisplay.innerText = formatTime(durationControl.value);
+        });
+
+        // ==========================================
+        // 2. LOGIKA MEMBACA FILE & SUBTITLE
         // ==========================================
         function srtToVtt(srtText) {
             let vttText = 'WEBVTT\n\n';
@@ -110,21 +319,16 @@
                 }
             });
 
-            if (!videoFile) {
-                statusText.innerText = "Video tidak ditemukan!";
-                return;
-            }
+            if (!videoFile) return;
 
             videoPlayer.innerHTML = '';
             videoPlayer.src = URL.createObjectURL(videoFile);
-            statusText.innerText = `Memutar: ${videoFile.name}`;
             videoPlayer.play();
 
             const videoBaseName = videoFile.name.substring(0, videoFile.name.lastIndexOf('.'));
             const matchedSub = subFiles.find(sub => sub.name.substring(0, sub.name.lastIndexOf('.')) === videoBaseName);
 
             if (matchedSub) {
-                statusText.innerText += ` | Subtitle: ${matchedSub.name}`;
                 const text = await matchedSub.text();
                 let vttData = matchedSub.name.endsWith('.srt') ? srtToVtt(text) : text;
                 const blob = new Blob([vttData], { type: 'text/vtt' });
@@ -140,37 +344,47 @@
         });
 
         // ==========================================
-        // 2. LOGIKA KONTROL VIDEO (TOMBOL)
+        // 3. LOGIKA KONTROL VIDEO (TOMBOL)
         // ==========================================
         function togglePlay() {
             if (videoPlayer.paused) videoPlayer.play();
             else videoPlayer.pause();
         }
 
-        btnPlayPause.addEventListener('click', togglePlay);
+        // Sinkronisasi ikon play/pause dan kerucut di tengah
+        videoPlayer.addEventListener('play', () => {
+            playIcon.style.display = 'none';
+            pauseIcon.style.display = 'block';
+            videoContainer.classList.add('playing'); // Sembunyikan kerucut
+        });
         
-        // Klik pada video juga bisa untuk play/pause
-        videoPlayer.addEventListener('click', togglePlay);
-
-        btnSkipBack.addEventListener('click', () => videoPlayer.currentTime -= 10);
-        btnSkipFwd.addEventListener('click', () => videoPlayer.currentTime += 10);
-
-        speedControl.addEventListener('change', (e) => {
-            videoPlayer.playbackRate = parseFloat(e.target.value);
+        videoPlayer.addEventListener('pause', () => {
+            playIcon.style.display = 'block';
+            pauseIcon.style.display = 'none';
+            videoContainer.classList.remove('playing'); // Tampilkan kerucut
         });
 
-        btnMute.addEventListener('click', () => {
-            videoPlayer.muted = !videoPlayer.muted;
-            btnMute.innerText = videoPlayer.muted ? '🔇 Unmute' : '🔊 Mute';
+        document.getElementById('btnPlayPause').addEventListener('click', togglePlay);
+        videoPlayer.addEventListener('click', togglePlay); // Klik pada video untuk play/pause
+
+        document.getElementById('btnRewind').addEventListener('click', () => videoPlayer.currentTime -= 10);
+        document.getElementById('btnFastForward').addEventListener('click', () => videoPlayer.currentTime += 10);
+        
+        document.getElementById('btnStop').addEventListener('click', () => {
+            videoPlayer.pause();
+            videoPlayer.currentTime = 0;
         });
 
         volumeControl.addEventListener('input', (e) => {
             videoPlayer.volume = e.target.value;
             videoPlayer.muted = false;
-            btnMute.innerText = '🔊 Mute';
         });
 
-        btnFullscreen.addEventListener('click', () => {
+        document.getElementById('btnMute').addEventListener('click', () => {
+            videoPlayer.muted = !videoPlayer.muted;
+        });
+
+        document.getElementById('btnFullscreen').addEventListener('click', () => {
             if (!document.fullscreenElement) {
                 videoContainer.requestFullscreen().catch(err => console.log(err));
             } else {
@@ -179,15 +393,14 @@
         });
 
         // ==========================================
-        // 3. PINTASAN KEYBOARD (SHORTCUTS)
+        // 4. PINTASAN KEYBOARD (SHORTCUTS)
         // ==========================================
         document.addEventListener('keydown', (e) => {
-            // Abaikan jika user sedang mengetik sesuatu di form (jika ada)
             if (e.target.tagName === 'INPUT' && e.target.type !== 'range') return;
 
             switch(e.key.toLowerCase()) {
                 case ' ': // Spasi
-                    e.preventDefault(); // Mencegah halaman scroll ke bawah
+                    e.preventDefault();
                     togglePlay();
                     break;
                 case 'arrowright': // Panah Kanan
@@ -217,7 +430,7 @@
             }
         });
 
-        // Daftarkan Service Worker
+        // Daftarkan Service Worker untuk Offline
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('./sw.js')
             .catch(err => console.log("Service Worker Gagal", err));
