@@ -208,8 +208,54 @@
         const pauseIcon = document.getElementById('pauseIcon');
         const volumeControl = document.getElementById('volumeControl');
 
-        let currentVideoName = ""; 
+        let currentVideoName = "";
         let hideControlsTimeout;
+        let currentVideoURL = null;
+        let currentSubtitleURL = null;
+
+        // ==========================================
+        // FILE HANDLER - MEMBUKA VIDEO DARI FILES FYDEOS
+        // ==========================================
+        if ("launchQueue" in window) {
+            launchQueue.setConsumer(async ({ files }) => {
+                if (!files || files.length === 0) return;
+
+                const videoFile = files.find(file =>
+                    file.type.startsWith("video/") ||
+                    /\.(mp4|mkv|webm|avi|mov|mpg|mpeg|ogv|flv|3gp)$/i.test(file.name)
+                );
+
+                if (!videoFile) return;
+
+                // Bersihkan URL/subtitle sebelumnya
+                if (currentVideoURL) {
+                    URL.revokeObjectURL(currentVideoURL);
+                    currentVideoURL = null;
+                }
+
+                if (currentSubtitleURL) {
+                    URL.revokeObjectURL(currentSubtitleURL);
+                    currentSubtitleURL = null;
+                }
+
+                vlcCone.style.display = "none";
+                currentVideoName = videoFile.name;
+
+                videoPlayer.pause();
+                videoPlayer.removeAttribute("src");
+                videoPlayer.innerHTML = "";
+
+                currentVideoURL = URL.createObjectURL(videoFile);
+                videoPlayer.src = currentVideoURL;
+                videoPlayer.load();
+
+                try {
+                    await videoPlayer.play();
+                } catch (error) {
+                    console.log("Autoplay diblokir. Tekan Play untuk memulai:", error);
+                }
+            });
+        }
 
         // ==========================================
         // 1. LOGIKA FULLSCREEN & AUTO-HIDE KONTROL
@@ -245,40 +291,86 @@
             return vttText;
         }
 
-        fileInput.addEventListener('change', async (e) => {
+        fileInput.addEventListener("change", async (e) => {
             const files = Array.from(e.target.files);
             if (files.length === 0) return;
 
-            let videoFile = null; let subFiles = [];
+            let videoFile = null;
+            const subFiles = [];
 
             files.forEach(file => {
-                if (file.type.startsWith('video/')) videoFile = file;
-                else if (file.name.endsWith('.srt') || file.name.endsWith('.vtt')) subFiles.push(file);
+                if (
+                    file.type.startsWith("video/") ||
+                    /\.(mp4|mkv|webm|avi|mov|mpg|mpeg|ogv|flv|3gp)$/i.test(file.name)
+                ) {
+                    videoFile = file;
+                } else if (/\.(srt|vtt)$/i.test(file.name)) {
+                    subFiles.push(file);
+                }
             });
 
             if (!videoFile) return;
 
-            // HILANGKAN KERUCUT VLC PERMANEN SETELAH VIDEO DIMUAT
-            vlcCone.style.display = 'none';
+            if (currentVideoURL) {
+                URL.revokeObjectURL(currentVideoURL);
+                currentVideoURL = null;
+            }
 
+            if (currentSubtitleURL) {
+                URL.revokeObjectURL(currentSubtitleURL);
+                currentSubtitleURL = null;
+            }
+
+            vlcCone.style.display = "none";
             currentVideoName = videoFile.name;
-            videoPlayer.innerHTML = '';
-            videoPlayer.src = URL.createObjectURL(videoFile);
-            videoPlayer.play();
 
-            const videoBaseName = videoFile.name.substring(0, videoFile.name.lastIndexOf('.'));
-            const matchedSub = subFiles.find(sub => sub.name.substring(0, sub.name.lastIndexOf('.')) === videoBaseName);
+            videoPlayer.pause();
+            videoPlayer.removeAttribute("src");
+            videoPlayer.innerHTML = "";
+
+            currentVideoURL = URL.createObjectURL(videoFile);
+            videoPlayer.src = currentVideoURL;
+            videoPlayer.load();
+
+            const videoDot = videoFile.name.lastIndexOf(".");
+            const videoBaseName = videoDot > -1
+                ? videoFile.name.substring(0, videoDot)
+                : videoFile.name;
+
+            const matchedSub = subFiles.find(sub => {
+                const subDot = sub.name.lastIndexOf(".");
+                const subBaseName = subDot > -1
+                    ? sub.name.substring(0, subDot)
+                    : sub.name;
+                return subBaseName === videoBaseName;
+            });
 
             if (matchedSub) {
-                const text = await matchedSub.text();
-                let vttData = matchedSub.name.endsWith('.srt') ? srtToVtt(text) : text;
-                const blob = new Blob([vttData], { type: 'text/vtt' });
-                
-                const trackEl = document.createElement('track');
-                trackEl.kind = 'subtitles'; trackEl.label = 'Indonesia'; trackEl.srclang = 'id';
-                trackEl.src = URL.createObjectURL(blob); trackEl.default = true;
+                const subtitleText = await matchedSub.text();
+                const vttData = matchedSub.name.toLowerCase().endsWith(".srt")
+                    ? srtToVtt(subtitleText)
+                    : subtitleText;
+
+                const blob = new Blob([vttData], { type: "text/vtt" });
+                currentSubtitleURL = URL.createObjectURL(blob);
+
+                const trackEl = document.createElement("track");
+                trackEl.kind = "subtitles";
+                trackEl.label = "Indonesia";
+                trackEl.srclang = "id";
+                trackEl.src = currentSubtitleURL;
+                trackEl.default = true;
+
                 videoPlayer.appendChild(trackEl);
             }
+
+            try {
+                await videoPlayer.play();
+            } catch (error) {
+                console.log("Autoplay diblokir. Tekan Play untuk memulai:", error);
+            }
+
+            e.target.value = "";
         });
 
         // ==========================================
@@ -336,11 +428,30 @@
         document.getElementById('btnRewind').addEventListener('click', () => videoPlayer.currentTime -= 10);
         document.getElementById('btnFastForward').addEventListener('click', () => videoPlayer.currentTime += 10);
         
-        document.getElementById('btnStop').addEventListener('click', () => {
-            videoPlayer.pause(); videoPlayer.currentTime = 0;
-            if (currentVideoName) localStorage.removeItem('vlc_resume_' + currentVideoName);
-            vlcCone.style.display = 'block'; // Tampilkan kembali kerucut jika di-stop
-            videoPlayer.src = "";
+        document.getElementById("btnStop").addEventListener("click", () => {
+            videoPlayer.pause();
+            videoPlayer.currentTime = 0;
+
+            if (currentVideoName) {
+                localStorage.removeItem("vlc_resume_" + currentVideoName);
+            }
+
+            vlcCone.style.display = "block";
+            videoPlayer.removeAttribute("src");
+            videoPlayer.innerHTML = "";
+            videoPlayer.load();
+
+            if (currentVideoURL) {
+                URL.revokeObjectURL(currentVideoURL);
+                currentVideoURL = null;
+            }
+
+            if (currentSubtitleURL) {
+                URL.revokeObjectURL(currentSubtitleURL);
+                currentSubtitleURL = null;
+            }
+
+            currentVideoName = "";
         });
 
         volumeControl.addEventListener('input', (e) => { videoPlayer.volume = e.target.value; videoPlayer.muted = false; });
