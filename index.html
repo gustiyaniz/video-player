@@ -1,4 +1,4 @@
-\<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -38,8 +38,9 @@
             left: 0;
             width: 100%;
             height: 100%;
-            object-fit: contain; /* Memastikan rasio video tetap proporsional */
+            object-fit: contain; /* Default rasio asli */
             display: block;
+            transition: object-fit 0.3s ease;
         }
 
         /* Ikon Kerucut VLC di Tengah */
@@ -50,14 +51,8 @@
             transform: translate(-50%, -50%);
             width: 150px;
             height: auto;
-            opacity: 1;
-            transition: opacity 0.3s ease;
             pointer-events: none;
             z-index: 5;
-        }
-        
-        .playing .vlc-cone-icon {
-            opacity: 0;
         }
 
         /* ==========================================
@@ -85,10 +80,7 @@
             flex: 1;
         }
 
-        .vlc-current-time, .vlc-total-time {
-            width: 45px;
-            text-align: center;
-        }
+        .vlc-current-time, .vlc-total-time { width: 45px; text-align: center; }
 
         #durationControl {
             flex: 1;
@@ -99,130 +91,89 @@
             cursor: pointer;
             -webkit-appearance: none;
         }
-
         #durationControl::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 8px;
-            height: 12px;
-            background: #aaa;
-            border: 1px solid #777;
-            border-radius: 2px;
-            cursor: pointer;
+            -webkit-appearance: none; width: 8px; height: 12px; background: #aaa; border: 1px solid #777; border-radius: 2px; cursor: pointer;
         }
 
-        .vlc-button-group {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .vlc-controls-right {
-            margin-left: 15px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .vlc-btn {
-            background: transparent;
-            border: none;
-            padding: 5px;
-            cursor: pointer;
-            color: #444;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 3px;
-        }
-        
-        .vlc-btn:hover {
-            background-color: #e0e0e0;
-        }
-        
-        .vlc-icon {
-            width: 14px;
-            height: 14px;
-            fill: currentColor;
-        }
-
-        .vlc-volume-area {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            margin-left: 10px;
-        }
+        .vlc-button-group { display: flex; align-items: center; gap: 4px; }
+        .vlc-controls-right { margin-left: 15px; display: flex; align-items: center; gap: 4px; }
+        .vlc-btn { background: transparent; border: none; padding: 5px; cursor: pointer; color: #444; display: flex; align-items: center; justify-content: center; border-radius: 3px; }
+        .vlc-btn:hover { background-color: #e0e0e0; }
+        .vlc-icon { width: 14px; height: 14px; fill: currentColor; }
+        .vlc-volume-area { display: flex; align-items: center; gap: 5px; margin-left: 10px; }
         
         #volumeControl {
-            width: 60px;
-            height: 8px;
-            background: linear-gradient(to right, #ffcc99 0%, #ff6600 100%);
-            border-radius: 4px;
-            outline: none;
-            cursor: pointer;
-            -webkit-appearance: none;
+            width: 60px; height: 8px; background: linear-gradient(to right, #ffcc99 0%, #ff6600 100%); border-radius: 4px; outline: none; cursor: pointer; -webkit-appearance: none;
         }
-        
         #volumeControl::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 10px;
-            height: 10px;
-            background: #fff;
-            border: 1px solid #777;
-            border-radius: 5px;
-            cursor: pointer;
+            -webkit-appearance: none; width: 10px; height: 10px; background: #fff; border: 1px solid #777; border-radius: 5px; cursor: pointer;
         }
 
         /* ==========================================
            4. TOMBOL PEMILIH FILE ATAS
            ========================================== */
         .file-select-btn {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            z-index: 100;
-            font-size: 12px;
-            border: 1px solid rgba(255,255,255,0.3);
-            transition: background 0.2s;
+            position: fixed; top: 10px; right: 10px; background: rgba(255, 255, 255, 0.2); color: white; padding: 6px 12px; border-radius: 4px; cursor: pointer; z-index: 100; font-size: 12px; border: 1px solid rgba(255,255,255,0.3); transition: background 0.2s;
         }
-        
-        .file-select-btn:hover {
-            background: rgba(255, 255, 255, 0.4);
-        }
-        
+        .file-select-btn:hover { background: rgba(255, 255, 255, 0.4); }
         input[type="file"] { display: none; }
-        
         ::cue { background-color: rgba(0, 0, 0, 0.8); color: yellow; font-size: 1.3em; text-shadow: 1px 1px 2px black; }
+
+        /* ==========================================
+           5. MODE FULLSCREEN (AUTO-HIDE UI)
+           ========================================== */
+        /* Menyembunyikan kursor saat diam di mode fullscreen */
+        body.is-fullscreen { cursor: none; }
+        body.is-fullscreen.mouse-active { cursor: default; }
+
+        /* Membuat panel kontrol melayang dan menghilang */
+        body.is-fullscreen .vlc-controls-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            box-sizing: border-box;
+            background: rgba(240, 240, 240, 0.9);
+            transition: transform 0.4s ease, opacity 0.4s ease;
+            transform: translateY(100%); /* Geser ke bawah layar */
+            opacity: 0;
+        }
+        /* Memunculkan panel kontrol saat mouse bergerak */
+        body.is-fullscreen.mouse-active .vlc-controls-bar {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        /* Menghilangkan tombol pilih file di fullscreen */
+        body.is-fullscreen .file-select-btn {
+            transition: opacity 0.4s ease;
+            opacity: 0;
+            pointer-events: none;
+        }
+        body.is-fullscreen.mouse-active .file-select-btn {
+            opacity: 1;
+            pointer-events: auto;
+        }
     </style>
 </head>
 <body>
-    <!-- Tombol Pemilih File di Pojok Kanan Atas -->
     <label class="file-select-btn">
         📂 Pilih Media
         <input type="file" id="fileInput" multiple accept="video/*,.srt,.vtt">
     </label>
 
-    <!-- Area Video Utama -->
     <div class="video-container" id="videoContainer">
         <video id="videoPlayer" crossorigin="anonymous"></video>
-        <!-- Ikon kerucut VLC besar -->
-        <img src="https://upload.wikimedia.org/wikipedia/commons/e/e6/VLC_Icon.svg" class="vlc-cone-icon" alt="VLC Cone">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/e/e6/VLC_Icon.svg" class="vlc-cone-icon" id="vlcCone" alt="VLC Cone">
     </div>
 
-    <!-- Panel Kontrol Bawah (Replika VLC) -->
     <div class="vlc-controls-bar">
-        <!-- Area Waktu dan Slider Durasi -->
         <div class="vlc-time-slider-area">
             <span class="vlc-current-time" id="currentTimeDisplay">--:--</span>
             <input type="range" id="durationControl" min="0" max="100" value="0">
             <span class="vlc-total-time" id="totalTimeDisplay">--:--</span>
         </div>
 
-        <!-- Grup Tombol Kiri -->
         <div class="vlc-button-group">
             <button class="vlc-btn" id="btnPlayPause" title="Play/Pause">
                 <svg class="vlc-icon" id="playIcon" viewBox="0 0 16 16"><path d="M4 1v14l11-7z"/></svg>
@@ -235,16 +186,12 @@
             <button class="vlc-btn" id="btnStop" title="Stop"><svg class="vlc-icon" viewBox="0 0 16 16"><path d="M2 2h12v12H2z"/></svg></button>
         </div>
         
-        <!-- Grup Tombol Kanan -->
         <div class="vlc-controls-right">
-            <button class="vlc-btn" title="Playlist"><svg class="vlc-icon" viewBox="0 0 16 16"><path d="M1 4h14v2H1zm0 4h14v2H1zm0 4h14v2H1z"/></svg></button>
-            <button class="vlc-btn" title="Equalizer"><svg class="vlc-icon" viewBox="0 0 16 16"><path d="M1 2v12h2V2zm4 0v12h2V2zm4 0v12h2V2zm4 0v12h2V2z"/></svg></button>
-            <button class="vlc-btn" title="Subtitle"><svg class="vlc-icon" viewBox="0 0 16 16"><path d="M1 4v8h14V4zm2 2h10v4H3z"/></svg></button>
-            <button class="vlc-btn" id="btnFullscreen" title="Fullscreen"><svg class="vlc-icon" viewBox="0 0 16 16"><path d="M1 1h6v2H3v4H1zm8 0h7v6h-2V3h-4zm0 12h4V9h2v7H9zm-6 0h4v2H1V9h2z"/></svg></button>
+            <button class="vlc-btn" title="Crop Layar [Tekan C]"><svg class="vlc-icon" viewBox="0 0 16 16"><path d="M1 4h14v8H1zM3 6v4h10V6H3z"/></svg></button>
+            <button class="vlc-btn" id="btnFullscreen" title="Fullscreen [Tekan F]"><svg class="vlc-icon" viewBox="0 0 16 16"><path d="M1 1h6v2H3v4H1zm8 0h7v6h-2V3h-4zm0 12h4V9h2v7H9zm-6 0h4v2H1V9h2z"/></svg></button>
             
-            <!-- Area Volume -->
             <div class="vlc-volume-area">
-                <button class="vlc-btn" id="btnMute" title="Mute/Unmute"><svg class="vlc-icon" viewBox="0 0 16 16"><path d="M8 1L4 5H1v6h3l4 4zm4 7c0-2-1.5-3.5-3-4v8c1.5-.5 3-2 3-4zm2 0c0-3.5-2.5-6.5-5.5-7v2c2 .5 3.5 2.5 3.5 5s-1.5 4.5-3.5 5v2c3-.5 5.5-3.5 5.5-7z"/></svg></button>
+                <button class="vlc-btn" id="btnMute" title="Mute"><svg class="vlc-icon" viewBox="0 0 16 16"><path d="M8 1L4 5H1v6h3l4 4zm4 7c0-2-1.5-3.5-3-4v8c1.5-.5 3-2 3-4zm2 0c0-3.5-2.5-6.5-5.5-7v2c2 .5 3.5 2.5 3.5 5s-1.5 4.5-3.5 5v2c3-.5 5.5-3.5 5.5-7z"/></svg></button>
                 <input type="range" id="volumeControl" min="0" max="1" step="0.05" value="0.6">
             </div>
         </div>
@@ -253,7 +200,7 @@
     <script>
         const fileInput = document.getElementById('fileInput');
         const videoPlayer = document.getElementById('videoPlayer');
-        const videoContainer = document.getElementById('videoContainer');
+        const vlcCone = document.getElementById('vlcCone');
         const currentTimeDisplay = document.getElementById('currentTimeDisplay');
         const totalTimeDisplay = document.getElementById('totalTimeDisplay');
         const durationControl = document.getElementById('durationControl');
@@ -261,65 +208,36 @@
         const pauseIcon = document.getElementById('pauseIcon');
         const volumeControl = document.getElementById('volumeControl');
 
-        // Variabel global untuk menyimpan nama file yang sedang diputar
         let currentVideoName = ""; 
+        let hideControlsTimeout;
 
         // ==========================================
-        // 1. LOGIKA FORMAT WAKTU & RESUME VIDEO
+        // 1. LOGIKA FULLSCREEN & AUTO-HIDE KONTROL
         // ==========================================
-        function formatTime(seconds) {
-            let min = Math.floor(seconds / 60);
-            let sec = Math.floor(seconds % 60);
-            return `${min < 10 ? '0' + min : min}:${sec < 10 ? '0' + sec : sec}`;
-        }
-
-        videoPlayer.addEventListener('loadedmetadata', () => {
-            totalTimeDisplay.innerText = formatTime(videoPlayer.duration);
-            durationControl.max = videoPlayer.duration;
-
-            // FITUR RESUME: Cek apakah ada riwayat waktu tonton
-            if (currentVideoName) {
-                const savedTime = localStorage.getItem('vlc_resume_' + currentVideoName);
-                if (savedTime && parseFloat(savedTime) > 0 && parseFloat(savedTime) < videoPlayer.duration - 2) {
-                    videoPlayer.currentTime = parseFloat(savedTime);
-                }
+        document.addEventListener('fullscreenchange', () => {
+            if (document.fullscreenElement) {
+                document.body.classList.add('is-fullscreen');
+            } else {
+                document.body.classList.remove('is-fullscreen');
+                document.body.classList.remove('mouse-active'); // Kembalikan normal
             }
         });
 
-        videoPlayer.addEventListener('timeupdate', () => {
-            currentTimeDisplay.innerText = formatTime(videoPlayer.currentTime);
-            if (!durationControl.dataset.isDragging) {
-                durationControl.value = videoPlayer.currentTime;
+        // Deteksi gerakan mouse untuk auto-hide di fullscreen
+        document.addEventListener('mousemove', () => {
+            if (document.body.classList.contains('is-fullscreen')) {
+                document.body.classList.add('mouse-active');
+                clearTimeout(hideControlsTimeout);
+                
+                // Hilangkan kontrol setelah 2.5 detik mouse tidak bergerak
+                hideControlsTimeout = setTimeout(() => {
+                    document.body.classList.remove('mouse-active');
+                }, 2500);
             }
-
-            // SIMPAN PROGRES
-            if (currentVideoName && videoPlayer.currentTime > 0) {
-                localStorage.setItem('vlc_resume_' + currentVideoName, videoPlayer.currentTime);
-            }
-        });
-
-        // Hapus riwayat jika video tamat
-        videoPlayer.addEventListener('ended', () => {
-            if (currentVideoName) {
-                localStorage.removeItem('vlc_resume_' + currentVideoName);
-            }
-            playIcon.style.display = 'block';
-            pauseIcon.style.display = 'none';
-            videoContainer.classList.remove('playing');
-        });
-
-        // Kontrol Durasi Slider
-        durationControl.addEventListener('mousedown', () => durationControl.dataset.isDragging = 'true');
-        durationControl.addEventListener('mouseup', () => {
-            videoPlayer.currentTime = durationControl.value;
-            delete durationControl.dataset.isDragging;
-        });
-        durationControl.addEventListener('input', () => {
-             currentTimeDisplay.innerText = formatTime(durationControl.value);
         });
 
         // ==========================================
-        // 2. LOGIKA MEMBACA FILE & SUBTITLE
+        // 2. LOGIKA MEMBACA FILE & HILANGKAN KERUCUT
         // ==========================================
         function srtToVtt(srtText) {
             let vttText = 'WEBVTT\n\n';
@@ -331,22 +249,19 @@
             const files = Array.from(e.target.files);
             if (files.length === 0) return;
 
-            let videoFile = null;
-            let subFiles = [];
+            let videoFile = null; let subFiles = [];
 
             files.forEach(file => {
-                if (file.type.startsWith('video/')) {
-                    videoFile = file;
-                } else if (file.name.endsWith('.srt') || file.name.endsWith('.vtt')) {
-                    subFiles.push(file);
-                }
+                if (file.type.startsWith('video/')) videoFile = file;
+                else if (file.name.endsWith('.srt') || file.name.endsWith('.vtt')) subFiles.push(file);
             });
 
             if (!videoFile) return;
 
-            // Simpan nama file ke variabel global
-            currentVideoName = videoFile.name;
+            // HILANGKAN KERUCUT VLC PERMANEN SETELAH VIDEO DIMUAT
+            vlcCone.style.display = 'none';
 
+            currentVideoName = videoFile.name;
             videoPlayer.innerHTML = '';
             videoPlayer.src = URL.createObjectURL(videoFile);
             videoPlayer.play();
@@ -360,109 +275,102 @@
                 const blob = new Blob([vttData], { type: 'text/vtt' });
                 
                 const trackEl = document.createElement('track');
-                trackEl.kind = 'subtitles';
-                trackEl.label = 'Indonesia';
-                trackEl.srclang = 'id';
-                trackEl.src = URL.createObjectURL(blob);
-                trackEl.default = true;
+                trackEl.kind = 'subtitles'; trackEl.label = 'Indonesia'; trackEl.srclang = 'id';
+                trackEl.src = URL.createObjectURL(blob); trackEl.default = true;
                 videoPlayer.appendChild(trackEl);
             }
         });
 
         // ==========================================
-        // 3. LOGIKA KONTROL VIDEO (TOMBOL)
+        // 3. LOGIKA FORMAT WAKTU & RESUME
+        // ==========================================
+        function formatTime(seconds) {
+            let min = Math.floor(seconds / 60); let sec = Math.floor(seconds % 60);
+            return `${min < 10 ? '0' + min : min}:${sec < 10 ? '0' + sec : sec}`;
+        }
+
+        videoPlayer.addEventListener('loadedmetadata', () => {
+            totalTimeDisplay.innerText = formatTime(videoPlayer.duration);
+            durationControl.max = videoPlayer.duration;
+            if (currentVideoName) {
+                const savedTime = localStorage.getItem('vlc_resume_' + currentVideoName);
+                if (savedTime && parseFloat(savedTime) > 0 && parseFloat(savedTime) < videoPlayer.duration - 2) {
+                    videoPlayer.currentTime = parseFloat(savedTime);
+                }
+            }
+        });
+
+        videoPlayer.addEventListener('timeupdate', () => {
+            currentTimeDisplay.innerText = formatTime(videoPlayer.currentTime);
+            if (!durationControl.dataset.isDragging) durationControl.value = videoPlayer.currentTime;
+            if (currentVideoName && videoPlayer.currentTime > 0) {
+                localStorage.setItem('vlc_resume_' + currentVideoName, videoPlayer.currentTime);
+            }
+        });
+
+        videoPlayer.addEventListener('ended', () => {
+            if (currentVideoName) localStorage.removeItem('vlc_resume_' + currentVideoName);
+            playIcon.style.display = 'block'; pauseIcon.style.display = 'none';
+        });
+
+        durationControl.addEventListener('mousedown', () => durationControl.dataset.isDragging = 'true');
+        durationControl.addEventListener('mouseup', () => {
+            videoPlayer.currentTime = durationControl.value;
+            delete durationControl.dataset.isDragging;
+        });
+        durationControl.addEventListener('input', () => currentTimeDisplay.innerText = formatTime(durationControl.value));
+
+        // ==========================================
+        // 4. KONTROL TOMBOL & SHORTCUT
         // ==========================================
         function togglePlay() {
             if (videoPlayer.paused) videoPlayer.play();
             else videoPlayer.pause();
         }
 
-        videoPlayer.addEventListener('play', () => {
-            playIcon.style.display = 'none';
-            pauseIcon.style.display = 'block';
-            videoContainer.classList.add('playing');
-        });
-        
-        videoPlayer.addEventListener('pause', () => {
-            playIcon.style.display = 'block';
-            pauseIcon.style.display = 'none';
-            videoContainer.classList.remove('playing');
-        });
+        videoPlayer.addEventListener('play', () => { playIcon.style.display = 'none'; pauseIcon.style.display = 'block'; });
+        videoPlayer.addEventListener('pause', () => { playIcon.style.display = 'block'; pauseIcon.style.display = 'none'; });
 
         document.getElementById('btnPlayPause').addEventListener('click', togglePlay);
         videoPlayer.addEventListener('click', togglePlay);
-
         document.getElementById('btnRewind').addEventListener('click', () => videoPlayer.currentTime -= 10);
         document.getElementById('btnFastForward').addEventListener('click', () => videoPlayer.currentTime += 10);
         
         document.getElementById('btnStop').addEventListener('click', () => {
-            videoPlayer.pause();
-            videoPlayer.currentTime = 0;
-            if (currentVideoName) {
-                localStorage.removeItem('vlc_resume_' + currentVideoName);
-            }
+            videoPlayer.pause(); videoPlayer.currentTime = 0;
+            if (currentVideoName) localStorage.removeItem('vlc_resume_' + currentVideoName);
+            vlcCone.style.display = 'block'; // Tampilkan kembali kerucut jika di-stop
+            videoPlayer.src = "";
         });
 
-        volumeControl.addEventListener('input', (e) => {
-            videoPlayer.volume = e.target.value;
-            videoPlayer.muted = false;
-        });
-
-        document.getElementById('btnMute').addEventListener('click', () => {
-            videoPlayer.muted = !videoPlayer.muted;
-        });
-
+        volumeControl.addEventListener('input', (e) => { videoPlayer.volume = e.target.value; videoPlayer.muted = false; });
+        document.getElementById('btnMute').addEventListener('click', () => videoPlayer.muted = !videoPlayer.muted);
         document.getElementById('btnFullscreen').addEventListener('click', () => {
-            if (!document.fullscreenElement) {
-                document.body.requestFullscreen().catch(err => console.log(err));
-            } else {
-                document.exitFullscreen();
-            }
+            if (!document.fullscreenElement) document.body.requestFullscreen().catch(err => console.log(err));
+            else document.exitFullscreen();
         });
 
-        // ==========================================
-        // 4. PINTASAN KEYBOARD (SHORTCUTS)
-        // ==========================================
         document.addEventListener('keydown', (e) => {
             if (e.target.tagName === 'INPUT' && e.target.type !== 'range') return;
-
             switch(e.key.toLowerCase()) {
-                case ' ':
+                case ' ': e.preventDefault(); togglePlay(); break;
+                case 'arrowright': videoPlayer.currentTime += 10; break;
+                case 'arrowleft': videoPlayer.currentTime -= 10; break;
+                case 'arrowup': e.preventDefault(); if (videoPlayer.volume < 1) { videoPlayer.volume = Math.min(1, videoPlayer.volume + 0.1); volumeControl.value = videoPlayer.volume; } break;
+                case 'arrowdown': e.preventDefault(); if (videoPlayer.volume > 0) { videoPlayer.volume = Math.max(0, videoPlayer.volume - 0.1); volumeControl.value = videoPlayer.volume; } break;
+                case 'f': if (!document.fullscreenElement) document.body.requestFullscreen(); else document.exitFullscreen(); break;
+                case 'c': // SHORTCUT CROP/COVER UNTUK MENGHILANGKAN BATAS HITAM
                     e.preventDefault();
-                    togglePlay();
-                    break;
-                case 'arrowright':
-                    videoPlayer.currentTime += 10;
-                    break;
-                case 'arrowleft':
-                    videoPlayer.currentTime -= 10;
-                    break;
-                case 'arrowup':
-                    e.preventDefault();
-                    if (videoPlayer.volume < 1) {
-                        videoPlayer.volume = Math.min(1, videoPlayer.volume + 0.1);
-                        volumeControl.value = videoPlayer.volume;
+                    if (videoPlayer.style.objectFit === 'cover') {
+                        videoPlayer.style.objectFit = 'contain'; // Kembali normal
+                    } else {
+                        videoPlayer.style.objectFit = 'cover'; // Paksa penuhi layar (crop batas hitam)
                     }
-                    break;
-                case 'arrowdown':
-                    e.preventDefault();
-                    if (videoPlayer.volume > 0) {
-                        videoPlayer.volume = Math.max(0, videoPlayer.volume - 0.1);
-                        volumeControl.value = videoPlayer.volume;
-                    }
-                    break;
-                case 'f':
-                    if (!document.fullscreenElement) document.body.requestFullscreen();
-                    else document.exitFullscreen();
                     break;
             }
         });
 
-        // Daftarkan Service Worker
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./sw.js')
-            .catch(err => console.log("Service Worker Gagal", err));
-        }
+        if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(err => console.log("SW Gagal", err));
     </script>
 </body>
 </html>
