@@ -10,176 +10,66 @@
            1. RESET & DASAR UI
            ========================================== */
         body, html {
-            background: #000;
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            overflow: hidden;
-            color: white;
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
+            background: #000; margin: 0; padding: 0; height: 100%; overflow: hidden;
+            color: white; font-family: Arial, sans-serif; display: flex; flex-direction: column;
         }
 
         /* ==========================================
-           2. TOP BAR (BARU)
+           2. TOP BAR & HISTORY
            ========================================== */
         .vlc-top-bar {
-            height: 40px;
-            background: #f0f0f0;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 10px;
-            color: #444;
-            font-size: 13px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            position: relative;
-            z-index: 10;
+            height: 40px; background: #f0f0f0; display: flex; align-items: center; justify-content: space-between;
+            padding: 0 10px; color: #444; font-size: 13px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); position: relative; z-index: 10;
         }
-
-        .video-title {
-            font-weight: bold;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 50%;
-            text-align: center;
-        }
-
-        .menu-container {
-            position: relative;
-        }
-
+        .video-title { font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 50%; text-align: center; }
+        .menu-container { position: relative; }
         .history-dropdown {
-            display: none;
-            position: absolute;
-            top: 35px;
-            left: 0;
-            background: #fff;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            min-width: 250px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            z-index: 20;
-            color: #333;
+            display: none; position: absolute; top: 35px; left: 0; background: #fff; border: 1px solid #ccc;
+            border-radius: 4px; min-width: 250px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 20; color: #333;
         }
-
-        .history-dropdown.show {
-            display: block;
-        }
-
-        .history-header {
-            padding: 8px 12px;
-            font-weight: bold;
-            border-bottom: 1px solid #eee;
-            background: #f9f9f9;
-        }
-
-        .history-item {
-            padding: 8px 12px;
-            font-size: 12px;
-            border-bottom: 1px solid #eee;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .history-item:last-child {
-            border-bottom: none;
-        }
-
+        .history-dropdown.show { display: block; }
+        .history-header { padding: 8px 12px; font-weight: bold; border-bottom: 1px solid #eee; background: #f9f9f9; }
+        .history-item { padding: 8px 12px; font-size: 12px; border-bottom: 1px solid #eee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: default;}
+        .history-item:last-child { border-bottom: none; }
+        
         .file-select-btn {
-            background: #e0e0e0;
-            color: #444;
-            padding: 5px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            border: 1px solid #ccc;
-            font-weight: bold;
+            background: #e0e0e0; color: #444; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; border: 1px solid #ccc; font-weight: bold;
         }
-
-        .file-select-btn:hover {
-            background: #d0d0d0;
-        }
-
+        .file-select-btn:hover { background: #d0d0d0; }
         input[type="file"] { display: none; }
 
         /* ==========================================
            3. AREA VIDEO UTAMA
            ========================================== */
-        .video-container {
-            flex: 1;
-            position: relative;
-            background: #000;
-            width: 100%;
-            overflow: hidden;
-        }
-
-        video {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            display: block;
-            transition: object-fit 0.3s ease;
-        }
-
-        .vlc-cone-icon {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 150px;
-            height: auto;
-            pointer-events: none;
-            z-index: 5;
-        }
+        .video-container { flex: 1; position: relative; background: #000; width: 100%; overflow: hidden; }
+        video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; display: block; transition: object-fit 0.3s ease; }
+        .vlc-cone-icon { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 150px; height: auto; pointer-events: none; z-index: 5; }
 
         /* ==========================================
            4. PANEL KONTROL BAWAH
            ========================================== */
         .vlc-controls-bar {
-            height: 40px;
-            background: #f0f0f0;
-            display: flex;
-            align-items: center;
-            padding: 0 10px;
-            color: #444;
-            font-size: 13px;
-            box-shadow: 0 -2px 5px rgba(0,0,0,0.2);
-            position: relative;
-            z-index: 10;
+            height: 40px; background: #f0f0f0; display: flex; align-items: center; padding: 0 10px; color: #444;
+            font-size: 13px; box-shadow: 0 -2px 5px rgba(0,0,0,0.2); position: relative; z-index: 10;
         }
-
         .vlc-time-slider-area { display: flex; align-items: center; gap: 8px; margin-right: 15px; font-family: monospace; flex: 1; }
         .vlc-current-time, .vlc-total-time { width: 45px; text-align: center; }
-
         #durationControl { flex: 1; height: 4px; background: #ccc; border-radius: 2px; outline: none; cursor: pointer; -webkit-appearance: none; }
         #durationControl::-webkit-slider-thumb { -webkit-appearance: none; width: 8px; height: 12px; background: #aaa; border: 1px solid #777; border-radius: 2px; cursor: pointer; }
-
         .vlc-button-group { display: flex; align-items: center; gap: 4px; }
         .vlc-controls-right { margin-left: 15px; display: flex; align-items: center; gap: 4px; }
         .vlc-btn { background: transparent; border: none; padding: 5px; cursor: pointer; color: #444; display: flex; align-items: center; justify-content: center; border-radius: 3px; font-weight: bold;}
         .vlc-btn:hover { background-color: #e0e0e0; }
         .vlc-icon { width: 14px; height: 14px; fill: currentColor; }
         .vlc-volume-area { display: flex; align-items: center; gap: 5px; margin-left: 10px; }
-        
         #volumeControl { width: 60px; height: 8px; background: linear-gradient(to right, #ffcc99 0%, #ff6600 100%); border-radius: 4px; outline: none; cursor: pointer; -webkit-appearance: none; }
         #volumeControl::-webkit-slider-thumb { -webkit-appearance: none; width: 10px; height: 10px; background: #fff; border: 1px solid #777; border-radius: 5px; cursor: pointer; }
-
-        ::cue { background-color: rgba(0, 0, 0, 0.8); color: yellow; font-size: 1.3em; text-shadow: 1px 1px 2px black; }
 
         /* ==========================================
            5. MODE FULLSCREEN (AUTO-HIDE UI)
            ========================================== */
         body.is-fullscreen { cursor: none; }
         body.is-fullscreen.mouse-active { cursor: default; }
-
-        /* Sembunyikan bilah atas dan bawah saat fullscreen diam */
         body.is-fullscreen .vlc-controls-bar {
             position: absolute; bottom: 0; left: 0; width: 100%; box-sizing: border-box; background: rgba(240, 240, 240, 0.9);
             transition: transform 0.4s ease, opacity 0.4s ease; transform: translateY(100%); opacity: 0;
@@ -188,30 +78,38 @@
             position: absolute; top: 0; left: 0; width: 100%; box-sizing: border-box; background: rgba(240, 240, 240, 0.9);
             transition: transform 0.4s ease, opacity 0.4s ease; transform: translateY(-100%); opacity: 0;
         }
+        body.is-fullscreen.mouse-active .vlc-controls-bar, body.is-fullscreen.mouse-active .vlc-top-bar { transform: translateY(0); opacity: 1; }
 
-        /* Munculkan kembali saat mouse bergerak */
-        body.is-fullscreen.mouse-active .vlc-controls-bar,
-        body.is-fullscreen.mouse-active .vlc-top-bar {
-            transform: translateY(0); opacity: 1;
+        /* ==========================================
+           6. PENGATURAN SUBTITLE PANEL (BARU)
+           ========================================== */
+        .subtitle-settings-panel {
+            display: none; position: absolute; bottom: 50px; right: 10px; background: rgba(20, 20, 20, 0.95);
+            color: #eee; width: 280px; padding: 15px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); z-index: 100;
+            border: 1px solid #444; font-size: 13px; flex-direction: column; gap: 10px;
         }
+        .subtitle-settings-panel.show { display: flex; }
+        .subtitle-settings-panel h4 { margin: 0 0 10px 0; padding-bottom: 5px; border-bottom: 1px solid #555; text-align: center; }
+        .setting-row { display: flex; flex-direction: column; gap: 4px; }
+        .setting-row label { display: flex; justify-content: space-between; font-weight: bold; }
+        .setting-row input[type="range"] { width: 100%; cursor: pointer; }
+        .setting-row select, .setting-row input[type="color"] { width: 100%; padding: 4px; background: #333; color: white; border: 1px solid #555; border-radius: 4px; cursor: pointer; }
+        .close-settings-btn { margin-top: 5px; background: #0078D7; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .close-settings-btn:hover { background: #005A9E; }
     </style>
 </head>
 <body>
 
-    <!-- TOP BAR (BARU) -->
+    <!-- TOP BAR -->
     <div class="vlc-top-bar">
         <div class="menu-container">
             <button class="vlc-btn" id="btnMenuFile">Media ▾</button>
             <div class="history-dropdown" id="historyDropdown">
                 <div class="history-header">Riwayat Putar</div>
-                <div id="historyList">
-                    <!-- Daftar riwayat akan dimasukkan via JavaScript -->
-                </div>
+                <div id="historyList"></div>
             </div>
         </div>
-        
         <div class="video-title" id="videoTitleDisplay">VLC Media Player (Ready)</div>
-        
         <label class="file-select-btn">
             📂 Buka File
             <input type="file" id="fileInput" multiple accept="video/*,.srt,.vtt">
@@ -222,6 +120,65 @@
     <div class="video-container" id="videoContainer">
         <video id="videoPlayer" crossorigin="anonymous"></video>
         <img src="https://upload.wikimedia.org/wikipedia/commons/e/e6/VLC_Icon.svg" class="vlc-cone-icon" id="vlcCone" alt="VLC Cone">
+        
+        <!-- PANEL PENGATURAN SUBTITLE -->
+        <div class="subtitle-settings-panel" id="subtitleSettingsPanel">
+            <h4>Pengaturan Subtitle</h4>
+            
+            <div class="setting-row">
+                <label>Ukuran Font: <span id="valSubSize">1.3em</span></label>
+                <input type="range" id="optSubSize" min="0.5" max="4" step="0.1" value="1.3">
+            </div>
+            
+            <div class="setting-row">
+                <label>Posisi Vertikal: <span id="valSubPos">Bawah</span></label>
+                <input type="range" id="optSubPos" min="0" max="300" step="10" value="0" title="Geser ke atas">
+            </div>
+
+            <div class="setting-row">
+                <label>Warna Teks:</label>
+                <select id="optSubColor">
+                    <option value="yellow" selected>Kuning</option>
+                    <option value="white">Putih</option>
+                    <option value="#00ff00">Hijau</option>
+                    <option value="#00ffff">Cyan</option>
+                </select>
+            </div>
+
+            <div class="setting-row">
+                <label>Jenis Font:</label>
+                <select id="optSubFont">
+                    <option value="Arial, sans-serif" selected>Arial (Default)</option>
+                    <option value="'Courier New', monospace">Courier New</option>
+                    <option value="'Times New Roman', serif">Times New Roman</option>
+                    <option value="'Comic Sans MS', cursive">Comic Sans</option>
+                    <option value="Impact, sans-serif">Impact (Tebal)</option>
+                </select>
+            </div>
+
+            <div class="setting-row">
+                <label>Gaya Bayangan (Shadow):</label>
+                <select id="optSubShadow">
+                    <option value="none">Tanpa Bayangan</option>
+                    <option value="1px 1px 2px black" selected>Normal</option>
+                    <option value="2px 2px 4px black">Tebal</option>
+                    <option value="-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000">Garis Luar (Outline Hitam)</option>
+                </select>
+            </div>
+
+            <div class="setting-row">
+                <label>Latar Belakang (Background):</label>
+                <select id="optSubBg">
+                    <option value="transparent">Transparan</option>
+                    <option value="rgba(0,0,0,0.5)">Hitam 50%</option>
+                    <option value="rgba(0,0,0,0.8)" selected>Hitam 80% (Default)</option>
+                    <option value="rgba(0,0,0,1)">Hitam Solid</option>
+                    <option value="rgba(0,0,255,0.5)">Biru Transparan</option>
+                </select>
+            </div>
+
+            <button class="close-settings-btn" id="btnCloseSubSettings">Tutup & Simpan</button>
+        </div>
     </div>
 
     <!-- PANEL KONTROL BAWAH -->
@@ -246,6 +203,8 @@
         
         <div class="vlc-controls-right">
             <button class="vlc-btn" title="Crop Layar [Tekan C]"><svg class="vlc-icon" viewBox="0 0 16 16"><path d="M1 4h14v8H1zM3 6v4h10V6H3z"/></svg></button>
+            <!-- TOMBOL PENGATURAN SUBTITLE -->
+            <button class="vlc-btn" id="btnSubtitleSettings" title="Pengaturan Subtitle"><svg class="vlc-icon" viewBox="0 0 16 16"><path d="M1 4v8h14V4zm2 2h10v4H3z"/></svg></button>
             <button class="vlc-btn" id="btnFullscreen" title="Fullscreen [Tekan F]"><svg class="vlc-icon" viewBox="0 0 16 16"><path d="M1 1h6v2H3v4H1zm8 0h7v6h-2V3h-4zm0 12h4V9h2v7H9zm-6 0h4v2H1V9h2z"/></svg></button>
             
             <div class="vlc-volume-area">
@@ -266,7 +225,6 @@
         const pauseIcon = document.getElementById('pauseIcon');
         const volumeControl = document.getElementById('volumeControl');
         
-        // Elemen Top Bar Baru
         const videoTitleDisplay = document.getElementById('videoTitleDisplay');
         const btnMenuFile = document.getElementById('btnMenuFile');
         const historyDropdown = document.getElementById('historyDropdown');
@@ -276,9 +234,84 @@
         let hideControlsTimeout;
         let currentVideoURL = null;
         let currentSubtitleURL = null;
-        
-        // Ambil riwayat dari local storage (maksimal 10)
         let playHistory = JSON.parse(localStorage.getItem('vlc_play_history')) || [];
+
+        // ==========================================
+        // FITUR BARU: PENGATURAN SUBTITLE DINAMIS
+        // ==========================================
+        const btnSubtitleSettings = document.getElementById('btnSubtitleSettings');
+        const subtitleSettingsPanel = document.getElementById('subtitleSettingsPanel');
+        const btnCloseSubSettings = document.getElementById('btnCloseSubSettings');
+        
+        const optSubSize = document.getElementById('optSubSize');
+        const optSubPos = document.getElementById('optSubPos');
+        const optSubColor = document.getElementById('optSubColor');
+        const optSubFont = document.getElementById('optSubFont');
+        const optSubShadow = document.getElementById('optSubShadow');
+        const optSubBg = document.getElementById('optSubBg');
+        
+        const valSubSize = document.getElementById('valSubSize');
+        const valSubPos = document.getElementById('valSubPos');
+
+        // Buat elemen <style> untuk menyuntikkan CSS subtitle secara real-time
+        const customSubStyle = document.createElement('style');
+        document.head.appendChild(customSubStyle);
+
+        function applySubtitleStyles() {
+            const size = optSubSize.value;
+            const pos = optSubPos.value;
+            const color = optSubColor.value;
+            const font = optSubFont.value;
+            const shadow = optSubShadow.value;
+            const bg = optSubBg.value;
+
+            // Update Teks Label
+            valSubSize.innerText = size + "em";
+            valSubPos.innerText = pos == 0 ? "Bawah" : "+" + pos + "px";
+
+            // CSS Dinamis untuk Chromium
+            customSubStyle.innerHTML = `
+                ::cue {
+                    font-size: ${size}em !important;
+                    font-family: ${font} !important;
+                    color: ${color} !important;
+                    text-shadow: ${shadow} !important;
+                    background-color: ${bg} !important;
+                }
+                /* Hack Chromium khusus untuk menggeser posisi subtitle ke atas */
+                video::-webkit-media-text-track-display {
+                    transform: translateY(-${pos}px) !important;
+                }
+            `;
+
+            // Simpan ke memori lokal
+            const subSettings = { size, pos, color, font, shadow, bg };
+            localStorage.setItem('vlc_sub_settings', JSON.stringify(subSettings));
+        }
+
+        // Muat pengaturan dari memori saat aplikasi dibuka
+        function loadSubtitleSettings() {
+            const saved = JSON.parse(localStorage.getItem('vlc_sub_settings'));
+            if (saved) {
+                optSubSize.value = saved.size || 1.3;
+                optSubPos.value = saved.pos || 0;
+                optSubColor.value = saved.color || 'yellow';
+                optSubFont.value = saved.font || 'Arial, sans-serif';
+                optSubShadow.value = saved.shadow || '1px 1px 2px black';
+                optSubBg.value = saved.bg || 'rgba(0,0,0,0.8)';
+            }
+            applySubtitleStyles();
+        }
+
+        // Jalankan pengaturan saat diubah pengguna
+        [optSubSize, optSubPos, optSubColor, optSubFont, optSubShadow, optSubBg].forEach(input => {
+            input.addEventListener('input', applySubtitleStyles);
+        });
+
+        // Buka / Tutup Panel Subtitle
+        btnSubtitleSettings.addEventListener('click', () => subtitleSettingsPanel.classList.toggle('show'));
+        btnCloseSubSettings.addEventListener('click', () => subtitleSettingsPanel.classList.remove('show'));
+        loadSubtitleSettings(); // Eksekusi saat awal
 
         // ==========================================
         // FUNGSI RIWAYAT (HISTORY)
@@ -286,82 +319,55 @@
         function updateHistoryUI() {
             historyList.innerHTML = '';
             if (playHistory.length === 0) {
-                historyList.innerHTML = '<div class="history-item" style="color:#888;">Belum ada video diputar</div>';
-                return;
+                historyList.innerHTML = '<div class="history-item" style="color:#888;">Belum ada video</div>'; return;
             }
             playHistory.forEach(name => {
                 const div = document.createElement('div');
-                div.className = 'history-item';
-                div.innerText = name;
-                div.title = name;
+                div.className = 'history-item'; div.innerText = name; div.title = name;
                 historyList.appendChild(div);
             });
         }
-
         function addToHistory(fileName) {
-            // Hapus nama yang sama agar tidak duplikat, lalu taruh di paling atas
             playHistory = playHistory.filter(name => name !== fileName);
             playHistory.unshift(fileName);
-            if (playHistory.length > 10) playHistory.pop(); // Batasi 10 file
+            if (playHistory.length > 10) playHistory.pop();
             localStorage.setItem('vlc_play_history', JSON.stringify(playHistory));
             updateHistoryUI();
         }
-
-        // Tampilkan/Sembunyikan Menu Dropdown
-        btnMenuFile.addEventListener('click', () => {
-            historyDropdown.classList.toggle('show');
-        });
-
-        // Tutup dropdown jika klik di luar menu
+        btnMenuFile.addEventListener('click', () => historyDropdown.classList.toggle('show'));
         document.addEventListener('click', (e) => {
-            if (!e.target.closest('.menu-container')) {
-                historyDropdown.classList.remove('show');
-            }
+            if (!e.target.closest('.menu-container')) historyDropdown.classList.remove('show');
         });
-
-        updateHistoryUI(); // Panggil saat awal dimuat
+        updateHistoryUI();
 
         // ==========================================
-        // FILE HANDLER - BUKA DARI FYDEOS FILES
+        // FILE HANDLER FYDEOS
         // ==========================================
         if ("launchQueue" in window) {
             launchQueue.setConsumer(async ({ files }) => {
                 if (!files || files.length === 0) return;
-
-                const videoFile = files.find(file =>
-                    file.type.startsWith("video/") ||
-                    /\.(mp4|mkv|webm|avi|mov|mpg|mpeg|ogv|flv|3gp)$/i.test(file.name)
-                );
-
-                if (!videoFile) return;
-                loadVideoFile(videoFile, []); // Panggil fungsi utama
+                const videoFile = files.find(file => file.type.startsWith("video/") || /\.(mp4|mkv|webm|avi|mov|mpg|mpeg|ogv|flv|3gp)$/i.test(file.name));
+                if (videoFile) loadVideoFile(videoFile, []);
             });
         }
 
         // ==========================================
-        // FULLSCREEN & AUTO-HIDE KONTROL
+        // FULLSCREEN & AUTO-HIDE
         // ==========================================
         document.addEventListener('fullscreenchange', () => {
-            if (document.fullscreenElement) {
-                document.body.classList.add('is-fullscreen');
-            } else {
-                document.body.classList.remove('is-fullscreen');
-                document.body.classList.remove('mouse-active');
-            }
+            if (document.fullscreenElement) document.body.classList.add('is-fullscreen');
+            else { document.body.classList.remove('is-fullscreen'); document.body.classList.remove('mouse-active'); }
         });
-
         document.addEventListener('mousemove', () => {
             if (document.body.classList.contains('is-fullscreen')) {
                 document.body.classList.add('mouse-active');
                 clearTimeout(hideControlsTimeout);
-                hideControlsTimeout = setTimeout(() => {
-                    document.body.classList.remove('mouse-active');
-                }, 2500);
+                hideControlsTimeout = setTimeout(() => document.body.classList.remove('mouse-active'), 2500);
             }
         });
 
         // ==========================================
-        // LOGIKA UTAMA MEMUAT VIDEO
+        // LOGIKA MEMUAT VIDEO
         // ==========================================
         function srtToVtt(srtText) {
             let vttText = 'WEBVTT\n\n';
@@ -370,78 +376,52 @@
         }
 
         async function loadVideoFile(videoFile, subFiles) {
-            if (currentVideoURL) { URL.revokeObjectURL(currentVideoURL); currentVideoURL = null; }
-            if (currentSubtitleURL) { URL.revokeObjectURL(currentSubtitleURL); currentSubtitleURL = null; }
-
+            if (currentVideoURL) { URL.revokeObjectURL(currentVideoURL); }
+            if (currentSubtitleURL) { URL.revokeObjectURL(currentSubtitleURL); }
             vlcCone.style.display = "none";
             currentVideoName = videoFile.name;
-            
-            // Perbarui Judul di Top Bar dan Tambah ke Riwayat
             videoTitleDisplay.innerText = currentVideoName;
             addToHistory(currentVideoName);
 
-            videoPlayer.pause();
-            videoPlayer.removeAttribute("src");
-            videoPlayer.innerHTML = "";
-
+            videoPlayer.pause(); videoPlayer.removeAttribute("src"); videoPlayer.innerHTML = "";
             currentVideoURL = URL.createObjectURL(videoFile);
-            videoPlayer.src = currentVideoURL;
-            videoPlayer.load();
+            videoPlayer.src = currentVideoURL; videoPlayer.load();
 
-            const videoDot = videoFile.name.lastIndexOf(".");
-            const videoBaseName = videoDot > -1 ? videoFile.name.substring(0, videoDot) : videoFile.name;
-
-            const matchedSub = subFiles.find(sub => {
-                const subDot = sub.name.lastIndexOf(".");
-                const subBaseName = subDot > -1 ? sub.name.substring(0, subDot) : sub.name;
-                return subBaseName === videoBaseName;
-            });
+            const videoBaseName = videoFile.name.substring(0, videoFile.name.lastIndexOf('.')) || videoFile.name;
+            const matchedSub = subFiles.find(sub => (sub.name.substring(0, sub.name.lastIndexOf('.')) || sub.name) === videoBaseName);
 
             if (matchedSub) {
                 const subtitleText = await matchedSub.text();
                 const vttData = matchedSub.name.toLowerCase().endsWith(".srt") ? srtToVtt(subtitleText) : subtitleText;
                 const blob = new Blob([vttData], { type: "text/vtt" });
                 currentSubtitleURL = URL.createObjectURL(blob);
-
                 const trackEl = document.createElement("track");
                 trackEl.kind = "subtitles"; trackEl.label = "Indonesia"; trackEl.srclang = "id";
                 trackEl.src = currentSubtitleURL; trackEl.default = true;
                 videoPlayer.appendChild(trackEl);
             }
-
-            try {
-                await videoPlayer.play();
-            } catch (error) {
-                console.log("Autoplay diblokir:", error);
-            }
+            try { await videoPlayer.play(); } catch (error) { console.log("Autoplay diblokir:", error); }
         }
 
         fileInput.addEventListener("change", (e) => {
             const files = Array.from(e.target.files);
             if (files.length === 0) return;
-
             let videoFile = null; const subFiles = [];
-
             files.forEach(file => {
-                if (file.type.startsWith("video/") || /\.(mp4|mkv|webm|avi|mov|mpg|mpeg|ogv|flv|3gp)$/i.test(file.name)) {
-                    videoFile = file;
-                } else if (/\.(srt|vtt)$/i.test(file.name)) {
-                    subFiles.push(file);
-                }
+                if (file.type.startsWith("video/") || /\.(mp4|mkv|webm|avi|mov|mpg|mpeg|ogv|flv|3gp)$/i.test(file.name)) videoFile = file;
+                else if (/\.(srt|vtt)$/i.test(file.name)) subFiles.push(file);
             });
-
             if (videoFile) loadVideoFile(videoFile, subFiles);
             e.target.value = "";
         });
 
         // ==========================================
-        // FORMAT WAKTU & RESUME (MEMORI)
+        // FORMAT WAKTU & RESUME
         // ==========================================
         function formatTime(seconds) {
             let min = Math.floor(seconds / 60); let sec = Math.floor(seconds % 60);
             return `${min < 10 ? '0' + min : min}:${sec < 10 ? '0' + sec : sec}`;
         }
-
         videoPlayer.addEventListener('loadedmetadata', () => {
             totalTimeDisplay.innerText = formatTime(videoPlayer.duration);
             durationControl.max = videoPlayer.duration;
@@ -452,60 +432,43 @@
                 }
             }
         });
-
         videoPlayer.addEventListener('timeupdate', () => {
             currentTimeDisplay.innerText = formatTime(videoPlayer.currentTime);
             if (!durationControl.dataset.isDragging) durationControl.value = videoPlayer.currentTime;
-            if (currentVideoName && videoPlayer.currentTime > 0) {
-                localStorage.setItem('vlc_resume_' + currentVideoName, videoPlayer.currentTime);
-            }
+            if (currentVideoName && videoPlayer.currentTime > 0) localStorage.setItem('vlc_resume_' + currentVideoName, videoPlayer.currentTime);
         });
-
         videoPlayer.addEventListener('ended', () => {
             if (currentVideoName) localStorage.removeItem('vlc_resume_' + currentVideoName);
             playIcon.style.display = 'block'; pauseIcon.style.display = 'none';
         });
-
         durationControl.addEventListener('mousedown', () => durationControl.dataset.isDragging = 'true');
         durationControl.addEventListener('mouseup', () => {
-            videoPlayer.currentTime = durationControl.value;
-            delete durationControl.dataset.isDragging;
+            videoPlayer.currentTime = durationControl.value; delete durationControl.dataset.isDragging;
         });
         durationControl.addEventListener('input', () => currentTimeDisplay.innerText = formatTime(durationControl.value));
 
         // ==========================================
         // KONTROL TOMBOL & SHORTCUT
         // ==========================================
-        function togglePlay() {
-            if (videoPlayer.paused) videoPlayer.play(); else videoPlayer.pause();
-        }
-
+        function togglePlay() { if (videoPlayer.paused) videoPlayer.play(); else videoPlayer.pause(); }
         videoPlayer.addEventListener('play', () => { playIcon.style.display = 'none'; pauseIcon.style.display = 'block'; });
         videoPlayer.addEventListener('pause', () => { playIcon.style.display = 'block'; pauseIcon.style.display = 'none'; });
-
         document.getElementById('btnPlayPause').addEventListener('click', togglePlay);
         videoPlayer.addEventListener('click', togglePlay);
         document.getElementById('btnRewind').addEventListener('click', () => videoPlayer.currentTime -= 10);
         document.getElementById('btnFastForward').addEventListener('click', () => videoPlayer.currentTime += 10);
-        
         document.getElementById("btnStop").addEventListener("click", () => {
             videoPlayer.pause(); videoPlayer.currentTime = 0;
             if (currentVideoName) localStorage.removeItem("vlc_resume_" + currentVideoName);
-            vlcCone.style.display = "block";
-            videoPlayer.removeAttribute("src"); videoPlayer.innerHTML = ""; videoPlayer.load();
+            vlcCone.style.display = "block"; videoPlayer.removeAttribute("src"); videoPlayer.innerHTML = ""; videoPlayer.load();
             if (currentVideoURL) { URL.revokeObjectURL(currentVideoURL); currentVideoURL = null; }
             if (currentSubtitleURL) { URL.revokeObjectURL(currentSubtitleURL); currentSubtitleURL = null; }
-            
-            // Reset Top Bar
-            currentVideoName = "";
-            videoTitleDisplay.innerText = "VLC Media Player (Ready)";
+            currentVideoName = ""; videoTitleDisplay.innerText = "VLC Media Player (Ready)";
         });
-
         volumeControl.addEventListener('input', (e) => { videoPlayer.volume = e.target.value; videoPlayer.muted = false; });
         document.getElementById('btnMute').addEventListener('click', () => videoPlayer.muted = !videoPlayer.muted);
         document.getElementById('btnFullscreen').addEventListener('click', () => {
-            if (!document.fullscreenElement) document.body.requestFullscreen().catch(err => console.log(err));
-            else document.exitFullscreen();
+            if (!document.fullscreenElement) document.body.requestFullscreen().catch(err => console.log(err)); else document.exitFullscreen();
         });
 
         document.addEventListener('keydown', (e) => {
@@ -517,11 +480,7 @@
                 case 'arrowup': e.preventDefault(); if (videoPlayer.volume < 1) { videoPlayer.volume = Math.min(1, videoPlayer.volume + 0.1); volumeControl.value = videoPlayer.volume; } break;
                 case 'arrowdown': e.preventDefault(); if (videoPlayer.volume > 0) { videoPlayer.volume = Math.max(0, videoPlayer.volume - 0.1); volumeControl.value = videoPlayer.volume; } break;
                 case 'f': if (!document.fullscreenElement) document.body.requestFullscreen(); else document.exitFullscreen(); break;
-                case 'c':
-                    e.preventDefault();
-                    if (videoPlayer.style.objectFit === 'cover') videoPlayer.style.objectFit = 'contain';
-                    else videoPlayer.style.objectFit = 'cover';
-                    break;
+                case 'c': e.preventDefault(); videoPlayer.style.objectFit = (videoPlayer.style.objectFit === 'cover') ? 'contain' : 'cover'; break;
             }
         });
 
