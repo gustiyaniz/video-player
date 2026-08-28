@@ -81,11 +81,11 @@
         body.is-fullscreen.mouse-active .vlc-controls-bar, body.is-fullscreen.mouse-active .vlc-top-bar { transform: translateY(0); opacity: 1; }
 
         /* ==========================================
-           6. PENGATURAN SUBTITLE PANEL (BARU)
+           6. PENGATURAN SUBTITLE PANEL
            ========================================== */
         .subtitle-settings-panel {
             display: none; position: absolute; bottom: 50px; right: 10px; background: rgba(20, 20, 20, 0.95);
-            color: #eee; width: 280px; padding: 15px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); z-index: 100;
+            color: #eee; width: 300px; padding: 15px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); z-index: 100;
             border: 1px solid #444; font-size: 13px; flex-direction: column; gap: 10px;
         }
         .subtitle-settings-panel.show { display: flex; }
@@ -94,6 +94,12 @@
         .setting-row label { display: flex; justify-content: space-between; font-weight: bold; }
         .setting-row input[type="range"] { width: 100%; cursor: pointer; }
         .setting-row select, .setting-row input[type="color"] { width: 100%; padding: 4px; background: #333; color: white; border: 1px solid #555; border-radius: 4px; cursor: pointer; }
+        
+        .add-sub-btn {
+            background: #28a745; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold; text-align: center; display: block; margin-top: 5px;
+        }
+        .add-sub-btn:hover { background: #218838; }
+
         .close-settings-btn { margin-top: 5px; background: #0078D7; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold; }
         .close-settings-btn:hover { background: #005A9E; }
     </style>
@@ -125,14 +131,20 @@
         <div class="subtitle-settings-panel" id="subtitleSettingsPanel">
             <h4>Pengaturan Subtitle</h4>
             
+            <label class="add-sub-btn">
+                ➕ Muat File Subtitle
+                <input type="file" id="manualSubInput" accept=".srt,.vtt" style="display: none;">
+            </label>
+
             <div class="setting-row">
                 <label>Ukuran Font: <span id="valSubSize">1.3em</span></label>
                 <input type="range" id="optSubSize" min="0.5" max="4" step="0.1" value="1.3">
             </div>
             
             <div class="setting-row">
-                <label>Posisi Vertikal: <span id="valSubPos">Bawah</span></label>
-                <input type="range" id="optSubPos" min="0" max="300" step="10" value="0" title="Geser ke atas">
+                <label>Posisi Teks: <span id="valSubPos">Tengah</span></label>
+                <!-- Rentang min negatif untuk turun, max positif untuk naik -->
+                <input type="range" id="optSubPos" min="-80" max="300" step="5" value="0" title="Geser ke atas/bawah">
             </div>
 
             <div class="setting-row">
@@ -173,7 +185,6 @@
                     <option value="rgba(0,0,0,0.5)">Hitam 50%</option>
                     <option value="rgba(0,0,0,0.8)" selected>Hitam 80% (Default)</option>
                     <option value="rgba(0,0,0,1)">Hitam Solid</option>
-                    <option value="rgba(0,0,255,0.5)">Biru Transparan</option>
                 </select>
             </div>
 
@@ -203,8 +214,14 @@
         
         <div class="vlc-controls-right">
             <button class="vlc-btn" title="Crop Layar [Tekan C]"><svg class="vlc-icon" viewBox="0 0 16 16"><path d="M1 4h14v8H1zM3 6v4h10V6H3z"/></svg></button>
-            <!-- TOMBOL PENGATURAN SUBTITLE -->
-            <button class="vlc-btn" id="btnSubtitleSettings" title="Pengaturan Subtitle"><svg class="vlc-icon" viewBox="0 0 16 16"><path d="M1 4v8h14V4zm2 2h10v4H3z"/></svg></button>
+            
+            <!-- IKON "CC" KHUSUS UNTUK SUBTITLE -->
+            <button class="vlc-btn" id="btnSubtitleSettings" title="Pengaturan Subtitle (CC)">
+                <svg class="vlc-icon" style="width: 18px; height: 18px;" viewBox="0 0 24 24">
+                    <path fill="currentColor" d="M19 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm-8 7H9.5v-.5h-2v3h2V13H11v1h-3a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h3v1zm6 0h-1.5v-.5h-2v3h2V13H17v1h-3a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h3v1z"/>
+                </svg>
+            </button>
+
             <button class="vlc-btn" id="btnFullscreen" title="Fullscreen [Tekan F]"><svg class="vlc-icon" viewBox="0 0 16 16"><path d="M1 1h6v2H3v4H1zm8 0h7v6h-2V3h-4zm0 12h4V9h2v7H9zm-6 0h4v2H1V9h2z"/></svg></button>
             
             <div class="vlc-volume-area">
@@ -242,6 +259,7 @@
         const btnSubtitleSettings = document.getElementById('btnSubtitleSettings');
         const subtitleSettingsPanel = document.getElementById('subtitleSettingsPanel');
         const btnCloseSubSettings = document.getElementById('btnCloseSubSettings');
+        const manualSubInput = document.getElementById('manualSubInput');
         
         const optSubSize = document.getElementById('optSubSize');
         const optSubPos = document.getElementById('optSubPos');
@@ -253,7 +271,6 @@
         const valSubSize = document.getElementById('valSubSize');
         const valSubPos = document.getElementById('valSubPos');
 
-        // Buat elemen <style> untuk menyuntikkan CSS subtitle secara real-time
         const customSubStyle = document.createElement('style');
         document.head.appendChild(customSubStyle);
 
@@ -265,11 +282,12 @@
             const shadow = optSubShadow.value;
             const bg = optSubBg.value;
 
-            // Update Teks Label
+            // Indikator label Naik/Turun
             valSubSize.innerText = size + "em";
-            valSubPos.innerText = pos == 0 ? "Bawah" : "+" + pos + "px";
+            if (pos == 0) valSubPos.innerText = "Default";
+            else if (pos > 0) valSubPos.innerText = `Naik ${pos}px`;
+            else valSubPos.innerText = `Turun ${Math.abs(pos)}px`;
 
-            // CSS Dinamis untuk Chromium
             customSubStyle.innerHTML = `
                 ::cue {
                     font-size: ${size}em !important;
@@ -278,18 +296,15 @@
                     text-shadow: ${shadow} !important;
                     background-color: ${bg} !important;
                 }
-                /* Hack Chromium khusus untuk menggeser posisi subtitle ke atas */
                 video::-webkit-media-text-track-display {
                     transform: translateY(-${pos}px) !important;
                 }
             `;
 
-            // Simpan ke memori lokal
             const subSettings = { size, pos, color, font, shadow, bg };
             localStorage.setItem('vlc_sub_settings', JSON.stringify(subSettings));
         }
 
-        // Muat pengaturan dari memori saat aplikasi dibuka
         function loadSubtitleSettings() {
             const saved = JSON.parse(localStorage.getItem('vlc_sub_settings'));
             if (saved) {
@@ -303,15 +318,41 @@
             applySubtitleStyles();
         }
 
-        // Jalankan pengaturan saat diubah pengguna
         [optSubSize, optSubPos, optSubColor, optSubFont, optSubShadow, optSubBg].forEach(input => {
             input.addEventListener('input', applySubtitleStyles);
         });
 
-        // Buka / Tutup Panel Subtitle
         btnSubtitleSettings.addEventListener('click', () => subtitleSettingsPanel.classList.toggle('show'));
         btnCloseSubSettings.addEventListener('click', () => subtitleSettingsPanel.classList.remove('show'));
-        loadSubtitleSettings(); // Eksekusi saat awal
+        loadSubtitleSettings();
+
+        // Tambah Subtitle Manual via Panel
+        manualSubInput.addEventListener('change', async (e) => {
+            if (e.target.files.length === 0 || !currentVideoURL) {
+                alert("Harap putar video terlebih dahulu sebelum memuat subtitle.");
+                e.target.value = "";
+                return;
+            }
+            const subFile = e.target.files[0];
+            const text = await subFile.text();
+            const vttData = subFile.name.toLowerCase().endsWith(".srt") ? srtToVtt(text) : text;
+            const blob = new Blob([vttData], { type: "text/vtt" });
+            
+            if (currentSubtitleURL) URL.revokeObjectURL(currentSubtitleURL);
+            currentSubtitleURL = URL.createObjectURL(blob);
+
+            // Hapus track lama jika ada
+            const oldTracks = videoPlayer.querySelectorAll('track');
+            oldTracks.forEach(t => t.remove());
+
+            const trackEl = document.createElement("track");
+            trackEl.kind = "subtitles"; trackEl.label = "Manual Subtitle"; trackEl.srclang = "id";
+            trackEl.src = currentSubtitleURL; trackEl.default = true;
+            videoPlayer.appendChild(trackEl);
+            
+            subtitleSettingsPanel.classList.remove('show'); // Tutup panel setelah berhasil
+            e.target.value = ""; // Reset
+        });
 
         // ==========================================
         // FUNGSI RIWAYAT (HISTORY)
