@@ -29,7 +29,12 @@
         }
         .history-dropdown.show { display: block; }
         .history-header { padding: 8px 12px; font-weight: bold; border-bottom: 1px solid #eee; background: #f9f9f9; }
-        .history-item { padding: 8px 12px; font-size: 12px; border-bottom: 1px solid #eee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: default;}
+        .history-item { padding: 0; font-size: 12px; border-bottom: 1px solid #eee; }
+        .history-play-btn { width: 100%; border: 0; background: transparent; color: #333; padding: 9px 12px; display: flex; align-items: center; gap: 8px; text-align: left; cursor: pointer; }
+        .history-play-btn:hover, .history-play-btn:focus { background: #f0f0f0; outline: none; }
+        .history-play-icon { flex: 0 0 auto; color: #ff6600; font-size: 13px; }
+        .history-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+        .history-unavailable { color: #888; cursor: default; }
         .history-item:last-child { border-bottom: none; }
         
         .file-select-btn {
@@ -116,10 +121,8 @@
             </div>
         </div>
         <div class="video-title" id="videoTitleDisplay">VLC Media Player (Ready)</div>
-        <label class="file-select-btn">
-            📂 Buka File
-            <input type="file" id="fileInput" multiple accept="video/*,.srt,.vtt">
-        </label>
+        <button class="file-select-btn" id="btnOpenFile" type="button">📂 Buka File</button>
+        <input type="file" id="fileInput" multiple accept="video/*,.srt,.vtt">
     </div>
 
     <!-- AREA VIDEO -->
@@ -233,6 +236,7 @@
 
     <script>
         const fileInput = document.getElementById('fileInput');
+        const btnOpenFile = document.getElementById('btnOpenFile');
         const videoPlayer = document.getElementById('videoPlayer');
         const vlcCone = document.getElementById('vlcCone');
         const currentTimeDisplay = document.getElementById('currentTimeDisplay');
@@ -252,6 +256,9 @@
         let currentVideoURL = null;
         let currentSubtitleURL = null;
         let playHistory = JSON.parse(localStorage.getItem('vlc_play_history')) || [];
+        // Migrasi histori lama (array string) ke format objek.
+        playHistory = playHistory.map(item => typeof item === 'string' ? { name: item } : item).filter(item => item && item.name);
+        const sessionFiles = new Map();
 
         // ==========================================
         // FITUR BARU: PENGATURAN SUBTITLE DINAMIS
@@ -355,26 +362,133 @@
         });
 
         // ==========================================
-        // FUNGSI RIWAYAT (HISTORY)
+        // RIWAYAT YANG BISA DIPUTAR ULANG
         // ==========================================
+        const RECENT_DB = 'fydeos_video_player';
+        const RECENT_STORE = 'recent_file_handles';
+
+        function openRecentDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(RECENT_DB, 1);
+                request.onupgradeneeded = () => {
+                    const db = request.result;
+                    if (!db.objectStoreNames.contains(RECENT_STORE)) db.createObjectStore(RECENT_STORE);
+                };
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function saveRecentHandle(fileName, handle) {
+            if (!handle) return;
+            try {
+                const db = await openRecentDB();
+                await new Promise((resolve, reject) => {
+                    const tx = db.transaction(RECENT_STORE, 'readwrite');
+                    tx.objectStore(RECENT_STORE).put(handle, fileName);
+                    tx.oncomplete = resolve;
+                    tx.onerror = () => reject(tx.error);
+                });
+                db.close();
+            } catch (err) {
+                console.warn('Handle recent tidak dapat disimpan:', err);
+            }
+        }
+
+        async function getRecentHandle(fileName) {
+            try {
+                const db = await openRecentDB();
+                const handle = await new Promise((resolve, reject) => {
+                    const tx = db.transaction(RECENT_STORE, 'readonly');
+                    const req = tx.objectStore(RECENT_STORE).get(fileName);
+                    req.onsuccess = () => resolve(req.result || null);
+                    req.onerror = () => reject(req.error);
+                });
+                db.close();
+                return handle;
+            } catch (err) {
+                console.warn('Gagal membaca handle recent:', err);
+                return null;
+            }
+        }
+
+        async function ensureHandlePermission(handle) {
+            if (!handle) return false;
+            const options = { mode: 'read' };
+            try {
+                if (typeof handle.queryPermission === 'function' && await handle.queryPermission(options) === 'granted') return true;
+                if (typeof handle.requestPermission === 'function' && await handle.requestPermission(options) === 'granted') return true;
+                return typeof handle.getFile === 'function';
+            } catch (err) {
+                console.warn('Izin file recent ditolak/tidak tersedia:', err);
+                return false;
+            }
+        }
+
         function updateHistoryUI() {
             historyList.innerHTML = '';
             if (playHistory.length === 0) {
-                historyList.innerHTML = '<div class="history-item" style="color:#888;">Belum ada video</div>'; return;
+                historyList.innerHTML = '<div class="history-item"><div class="history-play-btn history-unavailable">Belum ada video</div></div>';
+                return;
             }
-            playHistory.forEach(name => {
-                const div = document.createElement('div');
-                div.className = 'history-item'; div.innerText = name; div.title = name;
-                historyList.appendChild(div);
+            playHistory.forEach(item => {
+                const row = document.createElement('div');
+                row.className = 'history-item';
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'history-play-btn';
+                button.title = 'Putar ' + item.name;
+                button.innerHTML = '<span class="history-play-icon">▶</span><span class="history-name"></span>';
+                button.querySelector('.history-name').textContent = item.name;
+                button.addEventListener('click', () => playFromHistory(item.name));
+                row.appendChild(button);
+                historyList.appendChild(row);
             });
         }
-        function addToHistory(fileName) {
-            playHistory = playHistory.filter(name => name !== fileName);
-            playHistory.unshift(fileName);
+
+        async function addToHistory(fileName, handle = null, file = null) {
+            playHistory = playHistory.filter(item => item.name !== fileName);
+            playHistory.unshift({ name: fileName });
             if (playHistory.length > 10) playHistory.pop();
             localStorage.setItem('vlc_play_history', JSON.stringify(playHistory));
+            if (file) sessionFiles.set(fileName, file);
+            if (handle) await saveRecentHandle(fileName, handle);
             updateHistoryUI();
         }
+
+        async function playFromHistory(fileName) {
+            historyDropdown.classList.remove('show');
+            videoTitleDisplay.innerText = 'Membuka ' + fileName + '…';
+
+            // File dari input klasik masih bisa diputar selama sesi aplikasi belum ditutup.
+            const sessionFile = sessionFiles.get(fileName);
+            if (sessionFile) {
+                await loadVideoFile(sessionFile, [], null);
+                return;
+            }
+
+            const handle = await getRecentHandle(fileName);
+            if (!handle) {
+                videoTitleDisplay.innerText = fileName + ' — pilih file kembali';
+                alert('Akses ke file recent ini belum tersimpan. Pilih file tersebut sekali lagi melalui tombol Buka File, setelah itu Recent dapat membukanya kembali.');
+                return;
+            }
+
+            if (!await ensureHandlePermission(handle)) {
+                videoTitleDisplay.innerText = fileName + ' — izin file diperlukan';
+                return;
+            }
+
+            try {
+                const file = await handle.getFile();
+                await loadVideoFile(file, [], handle);
+            } catch (err) {
+                console.error('Gagal memutar recent:', err);
+                videoTitleDisplay.innerText = fileName + ' — file tidak ditemukan';
+                alert('File mungkin sudah dipindahkan, diganti nama, atau dihapus.');
+            }
+        }
+
         btnMenuFile.addEventListener('click', () => historyDropdown.classList.toggle('show'));
         document.addEventListener('click', (e) => {
             if (!e.target.closest('.menu-container')) historyDropdown.classList.remove('show');
@@ -392,12 +506,16 @@
 
             try {
                 const launchedFiles = [];
+                const handleByName = new Map();
 
                 for (const handle of fileHandles) {
                     try {
                         // Chromium/FydeOS: FileSystemFileHandle -> File
                         if (handle && typeof handle.getFile === 'function') {
-                            launchedFiles.push(await handle.getFile());
+                            const file = await handle.getFile();
+                            launchedFiles.push(file);
+                            handleByName.set(file.name, handle);
+                            await saveRecentHandle(file.name, handle);
                         // Fallback untuk browser/implementasi yang mungkin memberi File langsung
                         } else if (handle instanceof File) {
                             launchedFiles.push(handle);
@@ -419,7 +537,7 @@
                 );
 
                 if (videoFile) {
-                    await loadVideoFile(videoFile, subFiles);
+                    await loadVideoFile(videoFile, subFiles, handleByName.get(videoFile.name) || null);
                 } else {
                     videoTitleDisplay.innerText = 'Format file tidak dikenali';
                     console.warn('Tidak ada file video yang dikenali dari Open with:', launchedFiles);
@@ -460,13 +578,13 @@
             return vttText;
         }
 
-        async function loadVideoFile(videoFile, subFiles) {
+        async function loadVideoFile(videoFile, subFiles = [], fileHandle = null) {
             if (currentVideoURL) { URL.revokeObjectURL(currentVideoURL); }
             if (currentSubtitleURL) { URL.revokeObjectURL(currentSubtitleURL); }
             vlcCone.style.display = "none";
             currentVideoName = videoFile.name;
             videoTitleDisplay.innerText = currentVideoName;
-            addToHistory(currentVideoName);
+            await addToHistory(currentVideoName, fileHandle, videoFile);
 
             videoPlayer.pause(); videoPlayer.removeAttribute("src"); videoPlayer.innerHTML = "";
             currentVideoURL = URL.createObjectURL(videoFile);
@@ -495,16 +613,47 @@
             }
         }
 
-        fileInput.addEventListener("change", (e) => {
-            const files = Array.from(e.target.files);
-            if (files.length === 0) return;
-            let videoFile = null; const subFiles = [];
+        async function processPickedFiles(files, handleByName = new Map()) {
+            if (!files || files.length === 0) return;
+            let videoFile = null;
+            const subFiles = [];
             files.forEach(file => {
-                if (file.type.startsWith("video/") || /\.(mp4|mkv|webm|avi|mov|mpg|mpeg|ogv|flv|3gp)$/i.test(file.name)) videoFile = file;
+                if (file.type.startsWith('video/') || /\.(mp4|mkv|webm|avi|mov|mpg|mpeg|ogv|flv|3gp|m4v|ts|mts|m2ts)$/i.test(file.name)) videoFile = file;
                 else if (/\.(srt|vtt)$/i.test(file.name)) subFiles.push(file);
             });
-            if (videoFile) loadVideoFile(videoFile, subFiles);
-            e.target.value = "";
+            if (videoFile) await loadVideoFile(videoFile, subFiles, handleByName.get(videoFile.name) || null);
+        }
+
+        btnOpenFile.addEventListener('click', async () => {
+            if ('showOpenFilePicker' in window) {
+                try {
+                    const handles = await window.showOpenFilePicker({
+                        multiple: true,
+                        types: [
+                            { description: 'Video', accept: { 'video/*': ['.mp4','.m4v','.mkv','.webm','.avi','.mov','.mpg','.mpeg','.ogv','.3gp','.ts','.mts','.m2ts'] } },
+                            { description: 'Subtitle', accept: { 'text/plain': ['.srt','.vtt'] } }
+                        ]
+                    });
+                    const files = [];
+                    const handleByName = new Map();
+                    for (const handle of handles) {
+                        const file = await handle.getFile();
+                        files.push(file);
+                        handleByName.set(file.name, handle);
+                    }
+                    await processPickedFiles(files, handleByName);
+                    return;
+                } catch (err) {
+                    if (err && err.name === 'AbortError') return;
+                    console.warn('File picker modern gagal, memakai fallback:', err);
+                }
+            }
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', async (e) => {
+            await processPickedFiles(Array.from(e.target.files));
+            e.target.value = '';
         });
 
         // ==========================================
