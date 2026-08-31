@@ -1,9 +1,14 @@
-const CACHE_NAME = 'vid-player-cache-v3';
+const CACHE_NAME = 'vid-player-cache-v4';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './manifest.json',
-  './icon/videoplayer.png'
+  './icon/videoplayer.png',
+  './merger.js',
+  './lib/ffmpeg.js',
+  './lib/util.js',
+  './lib/814.ffmpeg.js',
+  './lib/ffmpeg-core.js'
 ];
 
 self.addEventListener('install', event => {
