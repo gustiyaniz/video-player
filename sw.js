@@ -1,24 +1,32 @@
-const CACHE_NAME = 'vid-player-cache-v1';
+const CACHE_NAME = 'vid-player-cache-v2';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
-  './manifest.json'
+  './manifest.json',
+  './icon/videoplayer.png'
 ];
 
-// Install: Simpan file ke sistem FydeOS
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(ASSETS_TO_CACHE);
-    })
+    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS_TO_CACHE))
   );
+  self.skipWaiting();
 });
 
-// Fetch: Gunakan file dari sistem jika offline
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key)))
+    )
+  );
+  self.clients.claim();
+});
+
 self.addEventListener('fetch', event => {
+  // Object URL/blob video tidak perlu dan tidak boleh dipaksa masuk cache.
+  if (event.request.url.startsWith('blob:')) return;
+
   event.respondWith(
-    caches.match(event.request).then(response => {
-      return response || fetch(event.request);
-    })
+    caches.match(event.request).then(response => response || fetch(event.request))
   );
 });

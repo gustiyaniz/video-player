@@ -125,7 +125,7 @@
     <!-- AREA VIDEO -->
     <div class="video-container" id="videoContainer">
         <video id="videoPlayer" crossorigin="anonymous"></video>
-        <img src="https://upload.wikimedia.org/wikipedia/commons/e/e6/VLC_Icon.svg" class="vlc-cone-icon" id="vlcCone" alt="VLC Cone">
+        <img src="./icon/videoplayer.png" class="vlc-cone-icon" id="vlcCone" alt="Video Player">
         
         <!-- PANEL PENGATURAN SUBTITLE -->
         <div class="subtitle-settings-panel" id="subtitleSettingsPanel">
@@ -382,13 +382,57 @@
         updateHistoryUI();
 
         // ==========================================
-        // FILE HANDLER FYDEOS
+        // FILE HANDLER FYDEOS / CHROMIUM PWA
         // ==========================================
-        if ("launchQueue" in window) {
-            launchQueue.setConsumer(async ({ files }) => {
-                if (!files || files.length === 0) return;
-                const videoFile = files.find(file => file.type.startsWith("video/") || /\.(mp4|mkv|webm|avi|mov|mpg|mpeg|ogv|flv|3gp)$/i.test(file.name));
-                if (videoFile) loadVideoFile(videoFile, []);
+        // File Handlers API tidak mengirim objek File secara langsung.
+        // launchQueue menerima FileSystemFileHandle, jadi setiap handle
+        // harus diubah dulu dengan await handle.getFile().
+        async function handleLaunchedFiles(fileHandles) {
+            if (!fileHandles || fileHandles.length === 0) return;
+
+            try {
+                const launchedFiles = [];
+
+                for (const handle of fileHandles) {
+                    try {
+                        // Chromium/FydeOS: FileSystemFileHandle -> File
+                        if (handle && typeof handle.getFile === 'function') {
+                            launchedFiles.push(await handle.getFile());
+                        // Fallback untuk browser/implementasi yang mungkin memberi File langsung
+                        } else if (handle instanceof File) {
+                            launchedFiles.push(handle);
+                        }
+                    } catch (fileError) {
+                        console.error('Gagal membaca file dari Open with:', fileError);
+                    }
+                }
+
+                if (launchedFiles.length === 0) return;
+
+                const videoFile = launchedFiles.find(file =>
+                    (file.type && file.type.startsWith('video/')) ||
+                    /\.(mp4|mkv|webm|avi|mov|mpg|mpeg|ogv|flv|3gp|m4v|ts|mts|m2ts)$/i.test(file.name || '')
+                );
+
+                const subFiles = launchedFiles.filter(file =>
+                    /\.(srt|vtt)$/i.test(file.name || '')
+                );
+
+                if (videoFile) {
+                    await loadVideoFile(videoFile, subFiles);
+                } else {
+                    videoTitleDisplay.innerText = 'Format file tidak dikenali';
+                    console.warn('Tidak ada file video yang dikenali dari Open with:', launchedFiles);
+                }
+            } catch (error) {
+                console.error('File Handler gagal:', error);
+                videoTitleDisplay.innerText = 'Gagal membuka file';
+            }
+        }
+
+        if ('launchQueue' in window) {
+            window.launchQueue.setConsumer(async (launchParams) => {
+                await handleLaunchedFiles(launchParams.files || []);
             });
         }
 
@@ -441,7 +485,14 @@
                 trackEl.src = currentSubtitleURL; trackEl.default = true;
                 videoPlayer.appendChild(trackEl);
             }
-            try { await videoPlayer.play(); } catch (error) { console.log("Autoplay diblokir:", error); }
+            try {
+                await videoPlayer.play();
+            } catch (error) {
+                // File tetap sudah dimuat. Jika kebijakan autoplay Chromium memblokir
+                // pemutaran otomatis, pengguna cukup menekan tombol Play.
+                console.log("Autoplay diblokir, video sudah siap diputar:", error);
+                videoTitleDisplay.innerText = currentVideoName + " — tekan Play";
+            }
         }
 
         fileInput.addEventListener("change", (e) => {
