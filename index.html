@@ -49,6 +49,9 @@
         .video-container { flex: 1; position: relative; background: #000; width: 100%; overflow: hidden; }
         video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; display: block; transition: object-fit 0.3s ease; }
         .vlc-cone-icon { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 150px; height: auto; pointer-events: none; z-index: 5; }
+        .subtitle-overlay { position:absolute; left:5%; right:5%; bottom:7%; z-index:7; display:none; justify-content:center; align-items:flex-end; text-align:center; pointer-events:none; white-space:pre-line; line-height:1.18; color:#fff; font-family:"Arial Rounded MT Bold",Arial,sans-serif; font-weight:800; font-size:clamp(20px,3.4vw,54px); letter-spacing:.01em; text-shadow:-2px -2px 0 #000,0 -2px 0 #000,2px -2px 0 #000,-2px 0 0 #000,2px 0 0 #000,-2px 2px 0 #000,0 2px 0 #000,2px 2px 0 #000,0 3px 2px rgba(0,0,0,.9); }
+        .subtitle-overlay.visible { display:flex; }
+        .subtitle-overlay-text { padding:.04em .16em; border-radius:.08em; }
 
         /* ==========================================
            4. PANEL KONTROL BAWAH
@@ -151,13 +154,15 @@
             </div>
         </div>
         <div class="video-title" id="videoTitleDisplay">VLC Media Player (Ready)</div>
-        <div style="display:flex;gap:6px;align-items:center;"><button class="tool-btn" id="btnMerger" type="button">🎬 Gabung A/V</button><button class="file-select-btn" id="btnOpenFile" type="button">📂 Buka File</button></div>
+        <div style="display:flex;gap:6px;align-items:center;"><button class="tool-btn" id="btnMerger" type="button">🎬 Gabung A/V</button><button class="file-select-btn" id="btnOpenFolder" type="button" title="Subtitle bernama sama akan dimuat otomatis">📁 Buka Folder</button><button class="file-select-btn" id="btnOpenFile" type="button">📂 Buka File</button></div>
         <input type="file" id="fileInput" multiple accept="video/*,.srt,.vtt">
+        <input type="file" id="folderInput" webkitdirectory multiple accept="video/*,.srt,.vtt">
     </div>
 
     <!-- AREA VIDEO -->
     <div class="video-container" id="videoContainer">
         <video id="videoPlayer" crossorigin="anonymous"></video>
+        <div class="subtitle-overlay" id="subtitleOverlay" aria-live="off"><span class="subtitle-overlay-text" id="subtitleOverlayText"></span></div>
         <img src="./icon/videoplayer.png" class="vlc-cone-icon" id="vlcCone" alt="Video Player">
         
         <!-- PANEL PENGATURAN SUBTITLE -->
@@ -183,8 +188,8 @@
             <div class="setting-row">
                 <label>Warna Teks:</label>
                 <select id="optSubColor">
-                    <option value="yellow" selected>Kuning</option>
-                    <option value="white">Putih</option>
+                    <option value="white" selected>Putih (Seperti Contoh)</option>
+                    <option value="yellow">Kuning</option>
                     <option value="#00ff00">Hijau</option>
                     <option value="#00ffff">Cyan</option>
                 </select>
@@ -193,7 +198,8 @@
             <div class="setting-row">
                 <label>Jenis Font:</label>
                 <select id="optSubFont">
-                    <option value="Arial, sans-serif" selected>Arial (Default)</option>
+                    <option value="&quot;Arial Rounded MT Bold&quot;, Arial, sans-serif" selected>Arial Rounded Bold (Seperti Contoh)</option>
+                    <option value="Arial, sans-serif">Arial</option>
                     <option value="'Courier New', monospace">Courier New</option>
                     <option value="'Times New Roman', serif">Times New Roman</option>
                     <option value="'Comic Sans MS', cursive">Comic Sans</option>
@@ -205,18 +211,18 @@
                 <label>Gaya Bayangan (Shadow):</label>
                 <select id="optSubShadow">
                     <option value="none">Tanpa Bayangan</option>
-                    <option value="1px 1px 2px black" selected>Normal</option>
+                    <option value="1px 1px 2px black">Normal</option>
                     <option value="2px 2px 4px black">Tebal</option>
-                    <option value="-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000">Garis Luar (Outline Hitam)</option>
+                    <option value="-2px -2px 0 #000, 0 -2px 0 #000, 2px -2px 0 #000, -2px 0 0 #000, 2px 0 0 #000, -2px 2px 0 #000, 0 2px 0 #000, 2px 2px 0 #000, 0 3px 2px rgba(0,0,0,.9)" selected>Garis Luar Hitam (Seperti Contoh)</option>
                 </select>
             </div>
 
             <div class="setting-row">
                 <label>Latar Belakang (Background):</label>
                 <select id="optSubBg">
-                    <option value="transparent">Transparan</option>
+                    <option value="transparent" selected>Transparan (Seperti Contoh)</option>
                     <option value="rgba(0,0,0,0.5)">Hitam 50%</option>
-                    <option value="rgba(0,0,0,0.8)" selected>Hitam 80% (Default)</option>
+                    <option value="rgba(0,0,0,0.8)">Hitam 80%</option>
                     <option value="rgba(0,0,0,1)">Hitam Solid</option>
                 </select>
             </div>
@@ -307,7 +313,9 @@
     <script src="./lib/util.js"></script>
     <script>
         const fileInput = document.getElementById('fileInput');
+        const folderInput = document.getElementById('folderInput');
         const btnOpenFile = document.getElementById('btnOpenFile');
+        const btnOpenFolder = document.getElementById('btnOpenFolder');
         const videoPlayer = document.getElementById('videoPlayer');
         const vlcCone = document.getElementById('vlcCone');
         const currentTimeDisplay = document.getElementById('currentTimeDisplay');
@@ -345,12 +353,11 @@
         const optSubFont = document.getElementById('optSubFont');
         const optSubShadow = document.getElementById('optSubShadow');
         const optSubBg = document.getElementById('optSubBg');
+        const subtitleOverlay = document.getElementById('subtitleOverlay');
+        const subtitleOverlayText = document.getElementById('subtitleOverlayText');
         
         const valSubSize = document.getElementById('valSubSize');
         const valSubPos = document.getElementById('valSubPos');
-
-        const customSubStyle = document.createElement('style');
-        document.head.appendChild(customSubStyle);
 
         function applySubtitleStyles() {
             const size = optSubSize.value;
@@ -366,18 +373,13 @@
             else if (pos > 0) valSubPos.innerText = `Naik ${pos}px`;
             else valSubPos.innerText = `Turun ${Math.abs(pos)}px`;
 
-            customSubStyle.innerHTML = `
-                ::cue {
-                    font-size: ${size}em !important;
-                    font-family: ${font} !important;
-                    color: ${color} !important;
-                    text-shadow: ${shadow} !important;
-                    background-color: ${bg} !important;
-                }
-                video::-webkit-media-text-track-display {
-                    transform: translateY(-${pos}px) !important;
-                }
-            `;
+            const ratio = Number(size) / 1.3;
+            subtitleOverlay.style.fontSize = `clamp(${20 * ratio}px, ${3.4 * ratio}vw, ${54 * ratio}px)`;
+            subtitleOverlay.style.bottom = `calc(7% + ${pos}px)`;
+            subtitleOverlay.style.color = color;
+            subtitleOverlay.style.fontFamily = font;
+            subtitleOverlay.style.textShadow = shadow;
+            subtitleOverlayText.style.backgroundColor = bg;
 
             const subSettings = { size, pos, color, font, shadow, bg };
             localStorage.setItem('vlc_sub_settings', JSON.stringify(subSettings));
@@ -385,14 +387,16 @@
 
         function loadSubtitleSettings() {
             const saved = JSON.parse(localStorage.getItem('vlc_sub_settings'));
-            if (saved) {
+            const needsExamplePreset = !localStorage.getItem('vlc_sub_style_v2');
+            if (saved && !needsExamplePreset) {
                 optSubSize.value = saved.size || 1.3;
                 optSubPos.value = saved.pos || 0;
-                optSubColor.value = saved.color || 'yellow';
-                optSubFont.value = saved.font || 'Arial, sans-serif';
-                optSubShadow.value = saved.shadow || '1px 1px 2px black';
-                optSubBg.value = saved.bg || 'rgba(0,0,0,0.8)';
+                optSubColor.value = saved.color || 'white';
+                optSubFont.value = saved.font || '"Arial Rounded MT Bold", Arial, sans-serif';
+                optSubShadow.value = saved.shadow || '-2px -2px 0 #000, 0 -2px 0 #000, 2px -2px 0 #000, -2px 0 0 #000, 2px 0 0 #000, -2px 2px 0 #000, 0 2px 0 #000, 2px 2px 0 #000, 0 3px 2px rgba(0,0,0,.9)';
+                optSubBg.value = saved.bg || 'transparent';
             }
+            if (needsExamplePreset) localStorage.setItem('vlc_sub_style_v2', '1');
             applySubtitleStyles();
         }
 
@@ -419,14 +423,7 @@
             if (currentSubtitleURL) URL.revokeObjectURL(currentSubtitleURL);
             currentSubtitleURL = URL.createObjectURL(blob);
 
-            // Hapus track lama jika ada
-            const oldTracks = videoPlayer.querySelectorAll('track');
-            oldTracks.forEach(t => t.remove());
-
-            const trackEl = document.createElement("track");
-            trackEl.kind = "subtitles"; trackEl.label = "Manual Subtitle"; trackEl.srclang = "id";
-            trackEl.src = currentSubtitleURL; trackEl.default = true;
-            videoPlayer.appendChild(trackEl);
+            installSubtitleTrack(currentSubtitleURL, "Manual Subtitle");
             
             subtitleSettingsPanel.classList.remove('show'); // Tutup panel setelah berhasil
             e.target.value = ""; // Reset
@@ -437,17 +434,45 @@
         // ==========================================
         const RECENT_DB = 'fydeos_video_player';
         const RECENT_STORE = 'recent_file_handles';
+        const DIRECTORY_STORE = 'directory_handles';
 
         function openRecentDB() {
             return new Promise((resolve, reject) => {
-                const request = indexedDB.open(RECENT_DB, 1);
+                const request = indexedDB.open(RECENT_DB, 2);
                 request.onupgradeneeded = () => {
                     const db = request.result;
                     if (!db.objectStoreNames.contains(RECENT_STORE)) db.createObjectStore(RECENT_STORE);
+                    if (!db.objectStoreNames.contains(DIRECTORY_STORE)) db.createObjectStore(DIRECTORY_STORE);
                 };
                 request.onsuccess = () => resolve(request.result);
                 request.onerror = () => reject(request.error);
             });
+        }
+
+        async function saveDirectoryHandle(handle) {
+            if (!handle) return;
+            const db = await openRecentDB();
+            await new Promise((resolve, reject) => {
+                const tx = db.transaction(DIRECTORY_STORE, 'readwrite');
+                tx.objectStore(DIRECTORY_STORE).put(handle, 'subtitle-folder');
+                tx.oncomplete = resolve;
+                tx.onerror = () => reject(tx.error);
+            });
+            db.close();
+        }
+
+        async function getDirectoryHandle() {
+            try {
+                const db = await openRecentDB();
+                const handle = await new Promise((resolve, reject) => {
+                    const tx = db.transaction(DIRECTORY_STORE, 'readonly');
+                    const req = tx.objectStore(DIRECTORY_STORE).get('subtitle-folder');
+                    req.onsuccess = () => resolve(req.result || null);
+                    req.onerror = () => reject(req.error);
+                });
+                db.close();
+                return handle;
+            } catch (err) { return null; }
         }
 
         async function saveRecentHandle(fileName, handle) {
@@ -649,6 +674,51 @@
             return vttText;
         }
 
+        function clearSubtitleOverlay() {
+            subtitleOverlayText.textContent = '';
+            subtitleOverlay.classList.remove('visible');
+        }
+
+        function installSubtitleTrack(url, label = 'Subtitle Otomatis') {
+            videoPlayer.querySelectorAll('track').forEach(track => track.remove());
+            clearSubtitleOverlay();
+            const trackEl = document.createElement('track');
+            trackEl.kind = 'subtitles';
+            trackEl.label = label;
+            trackEl.srclang = 'id';
+            trackEl.src = url;
+            trackEl.addEventListener('load', () => {
+                const textTrack = trackEl.track;
+                textTrack.mode = 'hidden';
+                const renderCue = () => {
+                    const cues = Array.from(textTrack.activeCues || []);
+                    const text = cues.map(cue => cue.text.replace(/<[^>]+>/g, '')).join('\n');
+                    subtitleOverlayText.textContent = text;
+                    subtitleOverlay.classList.toggle('visible', Boolean(text));
+                };
+                textTrack.addEventListener('cuechange', renderCue);
+                renderCue();
+            }, { once: true });
+            videoPlayer.appendChild(trackEl);
+        }
+
+        async function findMatchingSubtitle(videoName, suppliedFiles = []) {
+            const base = (videoName.substring(0, videoName.lastIndexOf('.')) || videoName).toLocaleLowerCase();
+            let match = suppliedFiles.find(file => {
+                const subBase = (file.name.substring(0, file.name.lastIndexOf('.')) || file.name).toLocaleLowerCase();
+                return subBase === base && /\.(srt|vtt)$/i.test(file.name);
+            });
+            if (match) return match;
+            const directory = await getDirectoryHandle();
+            if (!directory || !await ensureHandlePermission(directory)) return null;
+            for await (const entry of directory.values()) {
+                if (entry.kind !== 'file') continue;
+                const subBase = (entry.name.substring(0, entry.name.lastIndexOf('.')) || entry.name).toLocaleLowerCase();
+                if (subBase === base && /\.(srt|vtt)$/i.test(entry.name)) return entry.getFile();
+            }
+            return null;
+        }
+
         async function loadVideoFile(videoFile, subFiles = [], fileHandle = null) {
             if (currentVideoURL) { URL.revokeObjectURL(currentVideoURL); }
             if (currentSubtitleURL) { URL.revokeObjectURL(currentSubtitleURL); }
@@ -661,18 +731,16 @@
             currentVideoURL = URL.createObjectURL(videoFile);
             videoPlayer.src = currentVideoURL; videoPlayer.load();
 
-            const videoBaseName = videoFile.name.substring(0, videoFile.name.lastIndexOf('.')) || videoFile.name;
-            const matchedSub = subFiles.find(sub => (sub.name.substring(0, sub.name.lastIndexOf('.')) || sub.name) === videoBaseName);
+            clearSubtitleOverlay();
+            const matchedSub = await findMatchingSubtitle(videoFile.name, subFiles);
 
             if (matchedSub) {
                 const subtitleText = await matchedSub.text();
                 const vttData = matchedSub.name.toLowerCase().endsWith(".srt") ? srtToVtt(subtitleText) : subtitleText;
                 const blob = new Blob([vttData], { type: "text/vtt" });
                 currentSubtitleURL = URL.createObjectURL(blob);
-                const trackEl = document.createElement("track");
-                trackEl.kind = "subtitles"; trackEl.label = "Indonesia"; trackEl.srclang = "id";
-                trackEl.src = currentSubtitleURL; trackEl.default = true;
-                videoPlayer.appendChild(trackEl);
+                installSubtitleTrack(currentSubtitleURL, "Subtitle Otomatis");
+                videoTitleDisplay.innerText = currentVideoName + ' — subtitle otomatis';
             }
             try {
                 await videoPlayer.play();
@@ -720,6 +788,36 @@
                 }
             }
             fileInput.click();
+        });
+
+        btnOpenFolder.addEventListener('click', async () => {
+            if (!('showDirectoryPicker' in window)) { folderInput.click(); return; }
+            try {
+                const directory = await window.showDirectoryPicker({ mode: 'read' });
+                await saveDirectoryHandle(directory);
+                const files = [];
+                for await (const entry of directory.values()) {
+                    if (entry.kind === 'file' && (/\.(srt|vtt)$/i.test(entry.name) || /\.(mp4|mkv|webm|avi|mov|mpg|mpeg|ogv|flv|3gp|m4v|ts|mts|m2ts)$/i.test(entry.name))) files.push(await entry.getFile());
+                }
+                const videos = files.filter(file => /\.(mp4|mkv|webm|avi|mov|mpg|mpeg|ogv|flv|3gp|m4v|ts|mts|m2ts)$/i.test(file.name));
+                if (!videos.length) return alert('Tidak ada video yang didukung di folder ini.');
+                let selected = videos[0];
+                if (videos.length > 1) {
+                    const menu = videos.map((file, index) => `${index + 1}. ${file.name}`).join('\n');
+                    const choice = prompt(`Pilih nomor video:\n\n${menu}`, '1');
+                    if (choice === null) return;
+                    selected = videos[Number(choice) - 1];
+                    if (!selected) return alert('Nomor video tidak valid.');
+                }
+                await loadVideoFile(selected, files.filter(file => /\.(srt|vtt)$/i.test(file.name)));
+            } catch (err) { if (!err || err.name !== 'AbortError') console.error('Gagal membuka folder:', err); }
+        });
+
+        folderInput.addEventListener('change', async (e) => {
+            const files = Array.from(e.target.files || []);
+            const videos = files.filter(file => /\.(mp4|mkv|webm|avi|mov|mpg|mpeg|ogv|flv|3gp|m4v|ts|mts|m2ts)$/i.test(file.name));
+            if (videos.length) await loadVideoFile(videos[0], files.filter(file => /\.(srt|vtt)$/i.test(file.name)));
+            e.target.value = '';
         });
 
         fileInput.addEventListener('change', async (e) => {
@@ -775,6 +873,7 @@
             vlcCone.style.display = "block"; videoPlayer.removeAttribute("src"); videoPlayer.innerHTML = ""; videoPlayer.load();
             if (currentVideoURL) { URL.revokeObjectURL(currentVideoURL); currentVideoURL = null; }
             if (currentSubtitleURL) { URL.revokeObjectURL(currentSubtitleURL); currentSubtitleURL = null; }
+            clearSubtitleOverlay();
             currentVideoName = ""; videoTitleDisplay.innerText = "VLC Media Player (Ready)";
         });
         volumeControl.addEventListener('input', (e) => { videoPlayer.volume = e.target.value; videoPlayer.muted = false; });
