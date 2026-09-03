@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vid-player-cache-v6-subtitle-fix';
+const CACHE_NAME = 'vid-player-cache-v7-volume-settings';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

@@ -337,6 +337,33 @@
         playHistory = playHistory.map(item => typeof item === 'string' ? { name: item } : item).filter(item => item && item.name);
         const sessionFiles = new Map();
 
+        // Simpan volume dan status mute agar tetap sama setelah aplikasi dibuka kembali.
+        const VOLUME_SETTINGS_KEY = 'fydeos_player_volume_settings';
+
+        function restoreVolumeSettings() {
+            try {
+                const saved = JSON.parse(localStorage.getItem(VOLUME_SETTINGS_KEY));
+                const savedVolume = Number(saved && saved.volume);
+                videoPlayer.volume = Number.isFinite(savedVolume) ? Math.min(1, Math.max(0, savedVolume)) : 0.6;
+                videoPlayer.muted = Boolean(saved && saved.muted);
+                volumeControl.value = String(videoPlayer.volume);
+            } catch (error) {
+                videoPlayer.volume = 0.6;
+                videoPlayer.muted = false;
+                volumeControl.value = '0.6';
+            }
+        }
+
+        function saveVolumeSettings() {
+            localStorage.setItem(VOLUME_SETTINGS_KEY, JSON.stringify({
+                volume: videoPlayer.volume,
+                muted: videoPlayer.muted
+            }));
+        }
+
+        restoreVolumeSettings();
+        videoPlayer.addEventListener('volumechange', saveVolumeSettings);
+
         // ==========================================
         // FITUR BARU: PENGATURAN SUBTITLE DINAMIS
         // ==========================================
@@ -815,7 +842,7 @@
             currentSubtitleCues = [];
             currentVideoName = ""; videoTitleDisplay.innerText = "VLC Media Player (Ready)";
         });
-        volumeControl.addEventListener('input', (e) => { videoPlayer.volume = e.target.value; videoPlayer.muted = false; });
+        volumeControl.addEventListener('input', (e) => { videoPlayer.volume = Number(e.target.value); videoPlayer.muted = false; });
         document.getElementById('btnMute').addEventListener('click', () => videoPlayer.muted = !videoPlayer.muted);
         document.getElementById('btnFullscreen').addEventListener('click', () => {
             if (!document.fullscreenElement) document.body.requestFullscreen().catch(err => console.log(err)); else document.exitFullscreen();
