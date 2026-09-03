@@ -154,9 +154,8 @@
             </div>
         </div>
         <div class="video-title" id="videoTitleDisplay">VLC Media Player (Ready)</div>
-        <div style="display:flex;gap:6px;align-items:center;"><button class="tool-btn" id="btnMerger" type="button">🎬 Gabung A/V</button><button class="file-select-btn" id="btnOpenFolder" type="button" title="Subtitle bernama sama akan dimuat otomatis">📁 Buka Folder</button><button class="file-select-btn" id="btnOpenFile" type="button">📂 Buka File</button></div>
+        <div style="display:flex;gap:6px;align-items:center;"><button class="tool-btn" id="btnMerger" type="button">🎬 Gabung A/V</button><button class="file-select-btn" id="btnOpenFile" type="button">📂 Buka File</button></div>
         <input type="file" id="fileInput" multiple accept="video/*,.srt,.vtt">
-        <input type="file" id="folderInput" webkitdirectory multiple accept="video/*,.srt,.vtt">
     </div>
 
     <!-- AREA VIDEO -->
@@ -313,9 +312,7 @@
     <script src="./lib/util.js"></script>
     <script>
         const fileInput = document.getElementById('fileInput');
-        const folderInput = document.getElementById('folderInput');
         const btnOpenFile = document.getElementById('btnOpenFile');
-        const btnOpenFolder = document.getElementById('btnOpenFolder');
         const videoPlayer = document.getElementById('videoPlayer');
         const vlcCone = document.getElementById('vlcCone');
         const currentTimeDisplay = document.getElementById('currentTimeDisplay');
@@ -334,6 +331,7 @@
         let hideControlsTimeout;
         let currentVideoURL = null;
         let currentSubtitleURL = null;
+        let currentSubtitleCues = [];
         let playHistory = JSON.parse(localStorage.getItem('vlc_play_history')) || [];
         // Migrasi histori lama (array string) ke format objek.
         playHistory = playHistory.map(item => typeof item === 'string' ? { name: item } : item).filter(item => item && item.name);
@@ -418,12 +416,8 @@
             const subFile = e.target.files[0];
             const text = await subFile.text();
             const vttData = subFile.name.toLowerCase().endsWith(".srt") ? srtToVtt(text) : text;
-            const blob = new Blob([vttData], { type: "text/vtt" });
-            
-            if (currentSubtitleURL) URL.revokeObjectURL(currentSubtitleURL);
-            currentSubtitleURL = URL.createObjectURL(blob);
-
-            installSubtitleTrack(currentSubtitleURL, "Manual Subtitle");
+            loadSubtitleData(vttData);
+            videoTitleDisplay.innerText = currentVideoName + ' — subtitle manual';
             
             subtitleSettingsPanel.classList.remove('show'); // Tutup panel setelah berhasil
             e.target.value = ""; // Reset
@@ -434,7 +428,6 @@
         // ==========================================
         const RECENT_DB = 'fydeos_video_player';
         const RECENT_STORE = 'recent_file_handles';
-        const DIRECTORY_STORE = 'directory_handles';
 
         function openRecentDB() {
             return new Promise((resolve, reject) => {
@@ -442,37 +435,10 @@
                 request.onupgradeneeded = () => {
                     const db = request.result;
                     if (!db.objectStoreNames.contains(RECENT_STORE)) db.createObjectStore(RECENT_STORE);
-                    if (!db.objectStoreNames.contains(DIRECTORY_STORE)) db.createObjectStore(DIRECTORY_STORE);
                 };
                 request.onsuccess = () => resolve(request.result);
                 request.onerror = () => reject(request.error);
             });
-        }
-
-        async function saveDirectoryHandle(handle) {
-            if (!handle) return;
-            const db = await openRecentDB();
-            await new Promise((resolve, reject) => {
-                const tx = db.transaction(DIRECTORY_STORE, 'readwrite');
-                tx.objectStore(DIRECTORY_STORE).put(handle, 'subtitle-folder');
-                tx.oncomplete = resolve;
-                tx.onerror = () => reject(tx.error);
-            });
-            db.close();
-        }
-
-        async function getDirectoryHandle() {
-            try {
-                const db = await openRecentDB();
-                const handle = await new Promise((resolve, reject) => {
-                    const tx = db.transaction(DIRECTORY_STORE, 'readonly');
-                    const req = tx.objectStore(DIRECTORY_STORE).get('subtitle-folder');
-                    req.onsuccess = () => resolve(req.result || null);
-                    req.onerror = () => reject(req.error);
-                });
-                db.close();
-                return handle;
-            } catch (err) { return null; }
         }
 
         async function saveRecentHandle(fileName, handle) {
@@ -679,27 +645,36 @@
             subtitleOverlay.classList.remove('visible');
         }
 
-        function installSubtitleTrack(url, label = 'Subtitle Otomatis') {
-            videoPlayer.querySelectorAll('track').forEach(track => track.remove());
-            clearSubtitleOverlay();
-            const trackEl = document.createElement('track');
-            trackEl.kind = 'subtitles';
-            trackEl.label = label;
-            trackEl.srclang = 'id';
-            trackEl.src = url;
-            trackEl.addEventListener('load', () => {
-                const textTrack = trackEl.track;
-                textTrack.mode = 'hidden';
-                const renderCue = () => {
-                    const cues = Array.from(textTrack.activeCues || []);
-                    const text = cues.map(cue => cue.text.replace(/<[^>]+>/g, '')).join('\n');
-                    subtitleOverlayText.textContent = text;
-                    subtitleOverlay.classList.toggle('visible', Boolean(text));
-                };
-                textTrack.addEventListener('cuechange', renderCue);
-                renderCue();
-            }, { once: true });
-            videoPlayer.appendChild(trackEl);
+        function subtitleTimeToSeconds(value) {
+            const parts = value.trim().replace(',', '.').split(':').map(Number);
+            if (parts.some(Number.isNaN)) return NaN;
+            if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+            if (parts.length === 2) return parts[0] * 60 + parts[1];
+            return parts[0];
+        }
+
+        function loadSubtitleData(vttText) {
+            currentSubtitleCues = [];
+            const blocks = vttText.replace(/^\uFEFF/, '').replace(/\r/g, '').split(/\n{2,}/);
+            for (const block of blocks) {
+                const lines = block.trim().split('\n');
+                const timeIndex = lines.findIndex(line => line.includes('-->'));
+                if (timeIndex < 0) continue;
+                const timeParts = lines[timeIndex].split('-->');
+                const start = subtitleTimeToSeconds(timeParts[0]);
+                const end = subtitleTimeToSeconds(timeParts[1].trim().split(/\s+/)[0]);
+                const text = lines.slice(timeIndex + 1).join('\n').replace(/<[^>]+>/g, '').trim();
+                if (Number.isFinite(start) && Number.isFinite(end) && text) currentSubtitleCues.push({ start, end, text });
+            }
+            currentSubtitleCues.sort((a, b) => a.start - b.start);
+            renderSubtitleAt(videoPlayer.currentTime || 0);
+            if (!currentSubtitleCues.length) alert('Subtitle tidak dapat dibaca. Pastikan file menggunakan format SRT atau VTT yang valid.');
+        }
+
+        function renderSubtitleAt(time) {
+            const text = currentSubtitleCues.filter(cue => time >= cue.start && time <= cue.end).map(cue => cue.text).join('\n');
+            subtitleOverlayText.textContent = text;
+            subtitleOverlay.classList.toggle('visible', Boolean(text));
         }
 
         async function findMatchingSubtitle(videoName, suppliedFiles = []) {
@@ -709,13 +684,6 @@
                 return subBase === base && /\.(srt|vtt)$/i.test(file.name);
             });
             if (match) return match;
-            const directory = await getDirectoryHandle();
-            if (!directory || !await ensureHandlePermission(directory)) return null;
-            for await (const entry of directory.values()) {
-                if (entry.kind !== 'file') continue;
-                const subBase = (entry.name.substring(0, entry.name.lastIndexOf('.')) || entry.name).toLocaleLowerCase();
-                if (subBase === base && /\.(srt|vtt)$/i.test(entry.name)) return entry.getFile();
-            }
             return null;
         }
 
@@ -732,14 +700,13 @@
             videoPlayer.src = currentVideoURL; videoPlayer.load();
 
             clearSubtitleOverlay();
+            currentSubtitleCues = [];
             const matchedSub = await findMatchingSubtitle(videoFile.name, subFiles);
 
             if (matchedSub) {
                 const subtitleText = await matchedSub.text();
                 const vttData = matchedSub.name.toLowerCase().endsWith(".srt") ? srtToVtt(subtitleText) : subtitleText;
-                const blob = new Blob([vttData], { type: "text/vtt" });
-                currentSubtitleURL = URL.createObjectURL(blob);
-                installSubtitleTrack(currentSubtitleURL, "Subtitle Otomatis");
+                loadSubtitleData(vttData);
                 videoTitleDisplay.innerText = currentVideoName + ' — subtitle otomatis';
             }
             try {
@@ -790,36 +757,6 @@
             fileInput.click();
         });
 
-        btnOpenFolder.addEventListener('click', async () => {
-            if (!('showDirectoryPicker' in window)) { folderInput.click(); return; }
-            try {
-                const directory = await window.showDirectoryPicker({ mode: 'read' });
-                await saveDirectoryHandle(directory);
-                const files = [];
-                for await (const entry of directory.values()) {
-                    if (entry.kind === 'file' && (/\.(srt|vtt)$/i.test(entry.name) || /\.(mp4|mkv|webm|avi|mov|mpg|mpeg|ogv|flv|3gp|m4v|ts|mts|m2ts)$/i.test(entry.name))) files.push(await entry.getFile());
-                }
-                const videos = files.filter(file => /\.(mp4|mkv|webm|avi|mov|mpg|mpeg|ogv|flv|3gp|m4v|ts|mts|m2ts)$/i.test(file.name));
-                if (!videos.length) return alert('Tidak ada video yang didukung di folder ini.');
-                let selected = videos[0];
-                if (videos.length > 1) {
-                    const menu = videos.map((file, index) => `${index + 1}. ${file.name}`).join('\n');
-                    const choice = prompt(`Pilih nomor video:\n\n${menu}`, '1');
-                    if (choice === null) return;
-                    selected = videos[Number(choice) - 1];
-                    if (!selected) return alert('Nomor video tidak valid.');
-                }
-                await loadVideoFile(selected, files.filter(file => /\.(srt|vtt)$/i.test(file.name)));
-            } catch (err) { if (!err || err.name !== 'AbortError') console.error('Gagal membuka folder:', err); }
-        });
-
-        folderInput.addEventListener('change', async (e) => {
-            const files = Array.from(e.target.files || []);
-            const videos = files.filter(file => /\.(mp4|mkv|webm|avi|mov|mpg|mpeg|ogv|flv|3gp|m4v|ts|mts|m2ts)$/i.test(file.name));
-            if (videos.length) await loadVideoFile(videos[0], files.filter(file => /\.(srt|vtt)$/i.test(file.name)));
-            e.target.value = '';
-        });
-
         fileInput.addEventListener('change', async (e) => {
             await processPickedFiles(Array.from(e.target.files));
             e.target.value = '';
@@ -846,6 +783,7 @@
             currentTimeDisplay.innerText = formatTime(videoPlayer.currentTime);
             if (!durationControl.dataset.isDragging) durationControl.value = videoPlayer.currentTime;
             if (currentVideoName && videoPlayer.currentTime > 0) localStorage.setItem('vlc_resume_' + currentVideoName, videoPlayer.currentTime);
+            renderSubtitleAt(videoPlayer.currentTime);
         });
         videoPlayer.addEventListener('ended', () => {
             if (currentVideoName) localStorage.removeItem('vlc_resume_' + currentVideoName);
@@ -874,6 +812,7 @@
             if (currentVideoURL) { URL.revokeObjectURL(currentVideoURL); currentVideoURL = null; }
             if (currentSubtitleURL) { URL.revokeObjectURL(currentSubtitleURL); currentSubtitleURL = null; }
             clearSubtitleOverlay();
+            currentSubtitleCues = [];
             currentVideoName = ""; videoTitleDisplay.innerText = "VLC Media Player (Ready)";
         });
         volumeControl.addEventListener('input', (e) => { videoPlayer.volume = e.target.value; videoPlayer.muted = false; });
